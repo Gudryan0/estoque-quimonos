@@ -1,0 +1,111 @@
+============================================================
+ DEMONSTRAÇÃO FINAL DO SISTEMA DISTRIBUÍDO
+============================================================
+
+Data: 10/09/2026 10:29:32
+
+Cliente:
+  http://localhost:8000/
+
+Balanceador:
+  estoque_nginx
+
+Nós Laravel:
+  app1 = 172.18.0.6:9000
+  app2 = 172.18.0.5:9000
+  app3 = 172.18.0.4:9000
+
+Persistência compartilhada:
+  estoque_mysql
+
+------------------------------------------------------------
+1. BALANCEAMENTO ENTRE TRÊS NÓS
+------------------------------------------------------------
+
+01 | app1                           | HTTP 302 | Total: 0.019016s | Upstream: 302
+02 | app2                           | HTTP 302 | Total: 0.016806s | Upstream: 302
+03 | app3                           | HTTP 302 | Total: 0.016681s | Upstream: 302
+04 | app1                           | HTTP 302 | Total: 0.011754s | Upstream: 302
+05 | app2                           | HTTP 302 | Total: 0.011324s | Upstream: 302
+06 | app3                           | HTTP 302 | Total: 0.012289s | Upstream: 302
+07 | app1                           | HTTP 302 | Total: 0.011650s | Upstream: 302
+08 | app2                           | HTTP 302 | Total: 0.012345s | Upstream: 302
+09 | app3                           | HTTP 302 | Total: 0.012114s | Upstream: 302
+10 | app1                           | HTTP 302 | Total: 0.010850s | Upstream: 302
+11 | app2                           | HTTP 302 | Total: 0.011014s | Upstream: 302
+12 | app3                           | HTTP 302 | Total: 0.011300s | Upstream: 302
+13 | app1                           | HTTP 302 | Total: 0.011121s | Upstream: 302
+14 | app2                           | HTTP 302 | Total: 0.012291s | Upstream: 302
+15 | app3                           | HTTP 302 | Total: 0.010696s | Upstream: 302
+
+------------------------------------------------------------
+2. FALHA DE UM NÓ
+------------------------------------------------------------
+
+Desligando app3...
+
+01 | app1                           | HTTP 302 | Total: 0.012408s | Upstream: 302
+02 | app2                           | HTTP 302 | Total: 0.010880s | Upstream: 302
+03 | app3 -> app1                   | HTTP 302 | Total: 1.013557s | Upstream: 504, 302
+04 | app2                           | HTTP 302 | Total: 0.012413s | Upstream: 302
+05 | app1                           | HTTP 302 | Total: 0.011146s | Upstream: 302
+06 | app2                           | HTTP 302 | Total: 0.010915s | Upstream: 302
+07 | app1                           | HTTP 302 | Total: 0.010897s | Upstream: 302
+08 | app2                           | HTTP 302 | Total: 0.010980s | Upstream: 302
+09 | app1                           | HTTP 302 | Total: 0.013541s | Upstream: 302
+10 | app2                           | HTTP 302 | Total: 0.013435s | Upstream: 302
+
+------------------------------------------------------------
+3. FALHA DE DOIS NÓS
+------------------------------------------------------------
+
+Desligando também app2...
+
+01 | app1                           | HTTP 302 | Total: 0.012254s | Upstream: 302
+02 | app2 -> app1                   | HTTP 302 | Total: 1.014343s | Upstream: 504, 302
+03 | app1                           | HTTP 302 | Total: 0.011425s | Upstream: 302
+04 | app1                           | HTTP 302 | Total: 0.010820s | Upstream: 302
+05 | app1                           | HTTP 302 | Total: 0.011508s | Upstream: 302
+
+------------------------------------------------------------
+4. RECUPERAÇÃO DOS NÓS
+------------------------------------------------------------
+
+Religando app2 e app3...
+
+01 | app1                           | HTTP 302 | Total: 0.014773s | Upstream: 302
+02 | app1                           | HTTP 302 | Total: 0.011580s | Upstream: 302
+03 | app2                           | HTTP 302 | Total: 0.276420s | Upstream: 302
+04 | app3                           | HTTP 302 | Total: 0.182262s | Upstream: 302
+05 | app1                           | HTTP 302 | Total: 0.011325s | Upstream: 302
+06 | app2                           | HTTP 302 | Total: 0.015478s | Upstream: 302
+07 | app3                           | HTTP 302 | Total: 0.015771s | Upstream: 302
+08 | app1                           | HTTP 302 | Total: 0.011340s | Upstream: 302
+09 | app2                           | HTTP 302 | Total: 0.010964s | Upstream: 302
+10 | app3                           | HTTP 302 | Total: 0.011412s | Upstream: 302
+11 | app1                           | HTTP 302 | Total: 0.011191s | Upstream: 302
+12 | app2                           | HTTP 302 | Total: 0.011913s | Upstream: 302
+13 | app3                           | HTTP 302 | Total: 0.010370s | Upstream: 302
+14 | app1                           | HTTP 302 | Total: 0.012450s | Upstream: 302
+15 | app2                           | HTTP 302 | Total: 0.010850s | Upstream: 302
+
+============================================================
+ RESULTADO ESPERADO
+============================================================
+
+Balanceamento:
+  requisições distribuídas entre app1, app2 e app3.
+
+Falha de um nó:
+  sistema permanece disponível com dois nós.
+
+Falha de dois nós:
+  sistema permanece disponível através do nó restante.
+
+Recuperação:
+  nós recuperados retornam ao balanceamento.
+
+Transparência:
+  cliente utiliza sempre a mesma URL.
+
+============================================================

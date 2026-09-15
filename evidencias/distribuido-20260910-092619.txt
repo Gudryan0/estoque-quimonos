@@ -1,0 +1,89 @@
+============================================================
+ DEMONSTRAÇÃO DE SISTEMA DISTRIBUÍDO
+============================================================
+
+Data: 10/09/2026 09:26:19
+
+Nginx:
+  http://localhost:8000
+
+Nós Laravel:
+  app1 = 172.18.0.4:9000
+  app2 = 172.18.0.5:9000
+
+Banco compartilhado:
+  estoque_mysql
+
+------------------------------------------------------------
+1. BALANCEAMENTO DE CARGA
+------------------------------------------------------------
+
+01 | app1                     | HTTP 302 | Total: 0.358577s | Upstream: 302 | Backend: -s
+02 | app2                     | HTTP 302 | Total: 0.193903s | Upstream: 302 | Backend: -s
+03 | app1                     | HTTP 302 | Total: 0.016076s | Upstream: 302 | Backend: -s
+04 | app2                     | HTTP 302 | Total: 0.015888s | Upstream: 302 | Backend: -s
+05 | app1                     | HTTP 302 | Total: 0.010674s | Upstream: 302 | Backend: -s
+06 | app2                     | HTTP 302 | Total: 0.011645s | Upstream: 302 | Backend: -s
+07 | app1                     | HTTP 302 | Total: 0.011072s | Upstream: 302 | Backend: -s
+08 | app2                     | HTTP 302 | Total: 0.010931s | Upstream: 302 | Backend: -s
+09 | app1                     | HTTP 302 | Total: 0.011617s | Upstream: 302 | Backend: -s
+10 | app2                     | HTTP 302 | Total: 0.010942s | Upstream: 302 | Backend: -s
+
+------------------------------------------------------------
+2. SIMULAÇÃO DE FALHA DO APP2
+------------------------------------------------------------
+
+Parando app2...
+ Container estoque_app2 Stopping 
+ Container estoque_app2 Stopped 
+
+Requisições com apenas app1 disponível:
+
+01 | app1                     | HTTP 302 | Total: 0.013263s | Upstream: 302 | Backend: -s
+02 | app2 -> app1 (failover)  | HTTP 302 | Total: 1.014407s | Upstream: 504, 302 | Backend: 1.001, -s
+03 | app1                     | HTTP 302 | Total: 0.011433s | Upstream: 302 | Backend: -s
+04 | app1                     | HTTP 302 | Total: 0.012219s | Upstream: 302 | Backend: -s
+05 | app1                     | HTTP 302 | Total: 0.010808s | Upstream: 302 | Backend: -s
+
+------------------------------------------------------------
+3. RECUPERAÇÃO DO APP2
+------------------------------------------------------------
+
+Iniciando app2 novamente...
+ Container estoque_mysql Waiting 
+ Container estoque_mysql Healthy 
+ Container estoque_app2 Starting 
+ Container estoque_app2 Started 
+
+Aguardando o nó voltar ao pool...
+
+Requisições após recuperação:
+
+01 | app1                     | HTTP 302 | Total: 0.013422s | Upstream: 302 | Backend: -s
+02 | app1                     | HTTP 302 | Total: 0.011052s | Upstream: 302 | Backend: -s
+03 | app2                     | HTTP 302 | Total: 0.187169s | Upstream: 302 | Backend: -s
+04 | app1                     | HTTP 302 | Total: 0.011097s | Upstream: 302 | Backend: -s
+05 | app2                     | HTTP 302 | Total: 0.015868s | Upstream: 302 | Backend: -s
+06 | app1                     | HTTP 302 | Total: 0.011814s | Upstream: 302 | Backend: -s
+07 | app2                     | HTTP 302 | Total: 0.010821s | Upstream: 302 | Backend: -s
+08 | app1                     | HTTP 302 | Total: 0.010871s | Upstream: 302 | Backend: -s
+09 | app2                     | HTTP 302 | Total: 0.010745s | Upstream: 302 | Backend: -s
+10 | app1                     | HTTP 302 | Total: 0.014505s | Upstream: 302 | Backend: -s
+
+============================================================
+ RESULTADO
+============================================================
+
+Balanceamento:
+  app1 e app2 receberam requisições.
+
+Tolerância a falhas:
+  a aplicação continuou respondendo após a queda do app2.
+
+Recuperação:
+  app2 voltou ao pool após ser iniciado novamente.
+
+Relatório salvo em:
+  evidencias/distribuido-20260910-092619.txt
+
+============================================================

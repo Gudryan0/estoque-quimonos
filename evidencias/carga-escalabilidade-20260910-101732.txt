@@ -1,0 +1,547 @@
+============================================================
+ TESTE DE CARGA E ESCALABILIDADE
+============================================================
+
+Data:
+  10/09/2026 10:17:34
+
+URL:
+  http://localhost:8000/login
+
+Requisições:
+  600 por repetição
+
+Repetições:
+  3
+
+Concorrências:
+  10, 30 e 60
+
+============================================================
+ 1 nó Laravel - concorrência 10
+============================================================
+
+Repetição 1 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 10...
+
+Cenário: 1 nó Laravel - concorrência 10
+Repetição: 1
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.674 s
+Requisições/s: 358.51
+Média: 27.61 ms
+Mediana: 26.25 ms
+P95: 35.42 ms
+Mínimo: 11.43 ms
+Máximo: 43.42 ms
+Status HTTP: 200:600
+
+Repetição 2 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 10...
+
+Cenário: 1 nó Laravel - concorrência 10
+Repetição: 2
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.707 s
+Requisições/s: 351.42
+Média: 28.07 ms
+Mediana: 26.40 ms
+P95: 36.28 ms
+Mínimo: 10.75 ms
+Máximo: 48.32 ms
+Status HTTP: 200:600
+
+Repetição 3 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 10...
+
+Cenário: 1 nó Laravel - concorrência 10
+Repetição: 3
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.625 s
+Requisições/s: 369.18
+Média: 26.85 ms
+Mediana: 25.56 ms
+P95: 34.38 ms
+Mínimo: 11.06 ms
+Máximo: 38.28 ms
+Status HTTP: 200:600
+
+============================================================
+ 2 nós Laravel - concorrência 10
+============================================================
+
+Repetição 1 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 10...
+
+Cenário: 2 nós Laravel - concorrência 10
+Repetição: 1
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.929 s
+Requisições/s: 645.52
+Média: 15.28 ms
+Mediana: 14.70 ms
+P95: 21.59 ms
+Mínimo: 11.49 ms
+Máximo: 27.82 ms
+Status HTTP: 200:600
+
+Repetição 2 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 10...
+
+Cenário: 2 nós Laravel - concorrência 10
+Repetição: 2
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.067 s
+Requisições/s: 562.48
+Média: 17.57 ms
+Mediana: 17.35 ms
+P95: 23.13 ms
+Mínimo: 10.85 ms
+Máximo: 30.12 ms
+Status HTTP: 200:600
+
+Repetição 3 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 10...
+
+Cenário: 2 nós Laravel - concorrência 10
+Repetição: 3
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.947 s
+Requisições/s: 633.64
+Média: 15.58 ms
+Mediana: 14.79 ms
+P95: 21.43 ms
+Mínimo: 10.51 ms
+Máximo: 24.81 ms
+Status HTTP: 200:600
+
+============================================================
+ 3 nós Laravel - concorrência 10
+============================================================
+
+Repetição 1 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 10...
+
+Cenário: 3 nós Laravel - concorrência 10
+Repetição: 1
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.866 s
+Requisições/s: 692.75
+Média: 14.30 ms
+Mediana: 14.05 ms
+P95: 17.88 ms
+Mínimo: 10.96 ms
+Máximo: 22.19 ms
+Status HTTP: 200:600
+
+Repetição 2 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 10...
+
+Cenário: 3 nós Laravel - concorrência 10
+Repetição: 2
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.830 s
+Requisições/s: 723.17
+Média: 13.68 ms
+Mediana: 13.45 ms
+P95: 16.41 ms
+Mínimo: 10.77 ms
+Máximo: 25.40 ms
+Status HTTP: 200:600
+
+Repetição 3 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 10...
+
+Cenário: 3 nós Laravel - concorrência 10
+Repetição: 3
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.860 s
+Requisições/s: 697.46
+Média: 14.17 ms
+Mediana: 13.80 ms
+P95: 17.58 ms
+Mínimo: 11.01 ms
+Máximo: 23.58 ms
+Status HTTP: 200:600
+
+============================================================
+ 1 nó Laravel - concorrência 30
+============================================================
+
+Repetição 1 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 30...
+
+Cenário: 1 nó Laravel - concorrência 30
+Repetição: 1
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.590 s
+Requisições/s: 377.32
+Média: 77.47 ms
+Mediana: 74.51 ms
+P95: 98.19 ms
+Mínimo: 12.14 ms
+Máximo: 102.04 ms
+Status HTTP: 200:600
+
+Repetição 2 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 30...
+
+Cenário: 1 nó Laravel - concorrência 30
+Repetição: 2
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.608 s
+Requisições/s: 373.23
+Média: 78.41 ms
+Mediana: 75.54 ms
+P95: 97.76 ms
+Mínimo: 11.42 ms
+Máximo: 101.97 ms
+Status HTTP: 200:600
+
+Repetição 3 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 30...
+
+Cenário: 1 nó Laravel - concorrência 30
+Repetição: 3
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.619 s
+Requisições/s: 370.70
+Média: 78.92 ms
+Mediana: 75.54 ms
+P95: 99.66 ms
+Mínimo: 12.45 ms
+Máximo: 104.07 ms
+Status HTTP: 200:600
+
+============================================================
+ 2 nós Laravel - concorrência 30
+============================================================
+
+Repetição 1 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 30...
+
+Cenário: 2 nós Laravel - concorrência 30
+Repetição: 1
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.913 s
+Requisições/s: 657.32
+Média: 44.01 ms
+Mediana: 44.17 ms
+P95: 53.88 ms
+Mínimo: 16.03 ms
+Máximo: 61.64 ms
+Status HTTP: 200:600
+
+Repetição 2 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 30...
+
+Cenário: 2 nós Laravel - concorrência 30
+Repetição: 2
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.073 s
+Requisições/s: 559.12
+Média: 51.85 ms
+Mediana: 53.74 ms
+P95: 60.84 ms
+Mínimo: 13.13 ms
+Máximo: 64.30 ms
+Status HTTP: 200:600
+
+Repetição 3 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 30...
+
+Cenário: 2 nós Laravel - concorrência 30
+Repetição: 3
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.968 s
+Requisições/s: 619.96
+Média: 46.74 ms
+Mediana: 45.18 ms
+P95: 60.45 ms
+Mínimo: 12.55 ms
+Máximo: 65.69 ms
+Status HTTP: 200:600
+
+============================================================
+ 3 nós Laravel - concorrência 30
+============================================================
+
+Repetição 1 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 30...
+
+Cenário: 3 nós Laravel - concorrência 30
+Repetição: 1
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.784 s
+Requisições/s: 765.58
+Média: 37.92 ms
+Mediana: 38.39 ms
+P95: 45.92 ms
+Mínimo: 13.15 ms
+Máximo: 49.37 ms
+Status HTTP: 200:600
+
+Repetição 2 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 30...
+
+Cenário: 3 nós Laravel - concorrência 30
+Repetição: 2
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.754 s
+Requisições/s: 795.72
+Média: 36.26 ms
+Mediana: 37.17 ms
+P95: 46.04 ms
+Mínimo: 13.56 ms
+Máximo: 48.87 ms
+Status HTTP: 200:600
+
+Repetição 3 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 30...
+
+Cenário: 3 nós Laravel - concorrência 30
+Repetição: 3
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.720 s
+Requisições/s: 832.99
+Média: 34.75 ms
+Mediana: 34.70 ms
+P95: 44.01 ms
+Mínimo: 13.60 ms
+Máximo: 48.39 ms
+Status HTTP: 200:600
+
+============================================================
+ 1 nó Laravel - concorrência 60
+============================================================
+
+Repetição 1 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 60...
+
+Cenário: 1 nó Laravel - concorrência 60
+Repetição: 1
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.678 s
+Requisições/s: 357.50
+Média: 158.77 ms
+Mediana: 151.50 ms
+P95: 196.36 ms
+Mínimo: 11.92 ms
+Máximo: 216.20 ms
+Status HTTP: 200:600
+
+Repetição 2 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 60...
+
+Cenário: 1 nó Laravel - concorrência 60
+Repetição: 2
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.669 s
+Requisições/s: 359.58
+Média: 157.76 ms
+Mediana: 149.14 ms
+P95: 199.32 ms
+Mínimo: 11.65 ms
+Máximo: 204.18 ms
+Status HTTP: 200:600
+
+Repetição 3 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 60...
+
+Cenário: 1 nó Laravel - concorrência 60
+Repetição: 3
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.649 s
+Requisições/s: 363.84
+Média: 155.60 ms
+Mediana: 148.88 ms
+P95: 195.14 ms
+Mínimo: 12.41 ms
+Máximo: 196.45 ms
+Status HTTP: 200:600
+
+============================================================
+ 2 nós Laravel - concorrência 60
+============================================================
+
+Repetição 1 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 60...
+
+Cenário: 2 nós Laravel - concorrência 60
+Repetição: 1
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.952 s
+Requisições/s: 630.36
+Média: 88.64 ms
+Mediana: 89.49 ms
+P95: 111.02 ms
+Mínimo: 12.43 ms
+Máximo: 116.34 ms
+Status HTTP: 200:600
+
+Repetição 2 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 60...
+
+Cenário: 2 nós Laravel - concorrência 60
+Repetição: 2
+Sucessos: 600/600
+Erros: 0
+Tempo total: 1.183 s
+Requisições/s: 507.04
+Média: 111.22 ms
+Mediana: 118.42 ms
+P95: 147.97 ms
+Mínimo: 12.18 ms
+Máximo: 159.30 ms
+Status HTTP: 200:600
+
+Repetição 3 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 60...
+
+Cenário: 2 nós Laravel - concorrência 60
+Repetição: 3
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.958 s
+Requisições/s: 626.48
+Média: 89.21 ms
+Mediana: 89.44 ms
+P95: 111.86 ms
+Mínimo: 12.13 ms
+Máximo: 120.04 ms
+Status HTTP: 200:600
+
+============================================================
+ 3 nós Laravel - concorrência 60
+============================================================
+
+Repetição 1 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 60...
+
+Cenário: 3 nós Laravel - concorrência 60
+Repetição: 1
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.783 s
+Requisições/s: 766.46
+Média: 72.38 ms
+Mediana: 76.04 ms
+P95: 88.15 ms
+Mínimo: 13.72 ms
+Máximo: 93.95 ms
+Status HTTP: 200:600
+
+Repetição 2 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 60...
+
+Cenário: 3 nós Laravel - concorrência 60
+Repetição: 2
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.761 s
+Requisições/s: 788.00
+Média: 69.55 ms
+Mediana: 70.76 ms
+P95: 87.65 ms
+Mínimo: 13.64 ms
+Máximo: 95.55 ms
+Status HTTP: 200:600
+
+Repetição 3 de 3
+
+Aquecendo com 30 requisições...
+Executando 600 requisições com concorrência 60...
+
+Cenário: 3 nós Laravel - concorrência 60
+Repetição: 3
+Sucessos: 600/600
+Erros: 0
+Tempo total: 0.712 s
+Requisições/s: 842.53
+Média: 65.30 ms
+Mediana: 66.22 ms
+P95: 84.01 ms
+Mínimo: 12.61 ms
+Máximo: 92.14 ms
+Status HTTP: 200:600
+
+============================================================
+ TESTE CONCLUÍDO
+============================================================
+
+CSV:
+  evidencias/carga-escalabilidade-20260910-101732.csv

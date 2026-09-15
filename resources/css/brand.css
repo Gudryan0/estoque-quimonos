@@ -1,0 +1,703 @@
+/* =========================================================
+   MY FIGHT co
+   Camada de identidade visual
+   ========================================================= */
+
+:root {
+    --brand-black: #0b0b0d;
+    --brand-charcoal: #15171b;
+    --brand-charcoal-soft: #202329;
+
+    --brand-gold: #c9a24a;
+    --brand-gold-light: #e0c27a;
+    --brand-gold-dark: #9f7a2d;
+
+    --brand-blue: #3157d5;
+    --brand-blue-dark: #2848b5;
+    --brand-blue-light: #eef2ff;
+
+    --brand-ice: #f8fafc;
+    --brand-silver: #d4d7dc;
+
+    --app-bg: #f5f6f8;
+    --app-surface: #ffffff;
+    --app-border: #e0e3e7;
+
+    --app-text: #1a1d21;
+    --app-text-muted: #68707b;
+
+    --sidebar-bg: var(--brand-black);
+    --sidebar-bg-secondary: var(--brand-charcoal-soft);
+
+    --sidebar-text: #d6d9de;
+    --sidebar-text-muted: #8c929c;
+
+    --primary: var(--brand-gold);
+    --primary-dark: var(--brand-gold-dark);
+    --primary-light: #faf5e8;
+
+    --focus-ring:
+        0 0 0 0.2rem
+        rgba(201, 162, 74, 0.22);
+}
+
+/* =========================================================
+   Fundo geral
+   ========================================================= */
+
+body {
+    background:
+        linear-gradient(
+            135deg,
+            #f7f8fa 0%,
+            #f3f4f6 100%
+        );
+}
+
+/* =========================================================
+   Símbolo da marca
+   ========================================================= */
+
+.brand-symbol {
+    width: 56px;
+    height: 52px;
+
+    display: inline-block;
+
+    flex-shrink: 0;
+
+    background-image:
+        url("/images/my-fight-icon.png");
+
+    background-repeat:
+        no-repeat;
+
+    background-position:
+        center;
+
+    background-size:
+        contain;
+
+    image-rendering:
+        auto;
+
+    filter:
+        drop-shadow(
+            0 2px 2px
+            rgba(0, 0, 0, 0.18)
+        );
+}
+
+.brand-symbol-sm {
+    width: 38px;
+    height: 38px;
+
+    background-size:
+        contain;
+}
+
+/* =========================================================
+   Sidebar
+   ========================================================= */
+
+.app-sidebar {
+    background:
+        linear-gradient(
+            180deg,
+            #0b0b0d 0%,
+            #121417 60%,
+            #17191d 100%
+        );
+
+    border-right:
+        1px solid
+        rgba(201, 162, 74, 0.18);
+}
+
+.sidebar-header {
+    padding:
+        1.25rem
+        1.25rem
+        1.1rem;
+
+    border-bottom-color:
+        rgba(201, 162, 74, 0.17);
+}
+
+.sidebar-brand {
+    gap: 0.85rem;
+
+    color:
+        #ffffff;
+}
+
+.sidebar-brand:hover {
+    color:
+        #ffffff;
+}
+
+.sidebar-brand:focus-visible {
+    box-shadow:
+        0 0 0 0.2rem
+        rgba(201, 162, 74, 0.22);
+}
+
+.sidebar-brand strong {
+    color:
+        #ffffff;
+
+    font-size: 0.94rem;
+}
+
+.sidebar-brand small {
+    color:
+        #969ca6;
+}
+
+.sidebar-section-title {
+    color:
+        #777e89;
+}
+
+.sidebar-link {
+    color:
+        #c9cdd4;
+}
+
+.sidebar-link:hover {
+    background:
+        rgba(201, 162, 74, 0.08);
+
+    color:
+        #ffffff;
+}
+
+.sidebar-link:focus-visible {
+    color:
+        #ffffff;
+
+    box-shadow:
+        0 0 0 0.2rem
+        rgba(201, 162, 74, 0.22);
+}
+
+.sidebar-link.active {
+    background:
+        rgba(201, 162, 74, 0.14);
+
+    color:
+        var(--brand-gold-light);
+
+    font-weight: 650;
+}
+
+.sidebar-link.active::before {
+    background:
+        var(--brand-gold);
+}
+
+.sidebar-user {
+    border-top-color:
+        rgba(201, 162, 74, 0.16);
+}
+
+.sidebar-user-avatar,
+.mobile-user-avatar {
+    border:
+        1px solid
+        rgba(201, 162, 74, 0.35);
+
+    background:
+        var(--brand-charcoal-soft);
+
+    color:
+        #ffffff;
+}
+
+.sidebar-user-text span {
+    color:
+        #8d939d;
+}
+
+/* =========================================================
+   Cabeçalho mobile
+   ========================================================= */
+
+.mobile-header {
+    background:
+        linear-gradient(
+            90deg,
+            #0b0b0d,
+            #17191d
+        );
+
+    border-bottom:
+        1px solid
+        rgba(201, 162, 74, 0.18);
+
+    box-shadow:
+        0 2px 12px
+        rgba(0, 0, 0, 0.17);
+}
+
+.mobile-menu-button {
+    border-color:
+        rgba(201, 162, 74, 0.4);
+
+    color:
+        #ffffff;
+}
+
+.mobile-menu-button:hover,
+.mobile-menu-button:focus {
+    border-color:
+        var(--brand-gold);
+
+    background:
+        rgba(201, 162, 74, 0.08);
+
+    color:
+        var(--brand-gold-light);
+}
+
+.mobile-brand {
+    display: inline-flex;
+
+    align-items: center;
+
+    gap: 0.5rem;
+
+    color:
+        #ffffff;
+}
+
+.mobile-brand:hover {
+    color:
+        var(--brand-gold-light);
+}
+
+.mobile-brand-name {
+    font-size: 0.9rem;
+    font-weight: 650;
+}
+
+/* =========================================================
+   Navegação mobile
+   ========================================================= */
+
+.mobile-nav-link:hover {
+    background:
+        #faf7ef;
+
+    color:
+        #88691f;
+}
+
+.mobile-nav-link.active {
+    background:
+        #faf4e4;
+
+    color:
+        #7e611f;
+
+    font-weight: 650;
+}
+
+/* =========================================================
+   Botões principais
+   ========================================================= */
+
+.btn-primary {
+    --bs-btn-bg:
+        var(--brand-gold);
+
+    --bs-btn-border-color:
+        var(--brand-gold);
+
+    --bs-btn-color:
+        #111315;
+
+    --bs-btn-hover-bg:
+        var(--brand-gold-dark);
+
+    --bs-btn-hover-border-color:
+        var(--brand-gold-dark);
+
+    --bs-btn-hover-color:
+        #ffffff;
+
+    --bs-btn-active-bg:
+        var(--brand-gold-dark);
+
+    --bs-btn-active-border-color:
+        var(--brand-gold-dark);
+
+    --bs-btn-active-color:
+        #ffffff;
+
+    font-weight: 600;
+}
+
+/* =========================================================
+   Formulários
+   ========================================================= */
+
+.form-control:focus,
+.form-select:focus {
+    border-color:
+        var(--brand-gold);
+
+    box-shadow:
+        var(--focus-ring);
+}
+
+.form-check-input:focus {
+    border-color:
+        var(--brand-gold);
+
+    box-shadow:
+        var(--focus-ring);
+}
+
+/* =========================================================
+   Cards
+   ========================================================= */
+
+.card {
+    border-color:
+        #dfe2e6;
+
+    box-shadow:
+        0 2px 5px
+        rgba(11, 11, 13, 0.035);
+}
+
+.card-header {
+    border-bottom-color:
+        #e2e4e8;
+}
+
+/* =========================================================
+   Dashboard - KPIs
+   ========================================================= */
+
+.dashboard-kpi {
+    --dashboard-kpi-accent:
+        #98a2b3;
+
+    --dashboard-kpi-value:
+        #344054;
+}
+
+.dashboard-kpi-danger {
+    --dashboard-kpi-accent:
+        #d75b67;
+
+    --dashboard-kpi-value:
+        #b33a48;
+}
+
+.dashboard-kpi-warning {
+    --dashboard-kpi-accent:
+        #d6a32b;
+
+    --dashboard-kpi-value:
+        #8b6814;
+}
+
+.dashboard-kpi-success {
+    --dashboard-kpi-accent:
+        #55a276;
+
+    --dashboard-kpi-value:
+        #337c50;
+}
+
+.dashboard-kpi-primary {
+    --dashboard-kpi-accent:
+        #5576d6;
+
+    --dashboard-kpi-value:
+        #3157b8;
+}
+
+.dashboard-kpi-tag {
+    border-color:
+        #e1e4e8;
+
+    background:
+        #f7f8fa;
+
+    color:
+        #69717e;
+}
+
+/* =========================================================
+   Dashboard - resumos
+   ========================================================= */
+
+.dashboard-summary-secondary {
+    border-color:
+        #dde1e6;
+
+    background:
+        #f4f5f7;
+
+    color:
+        #596371;
+}
+
+.dashboard-summary-primary {
+    border-color:
+        #d5defa;
+
+    background:
+        #f1f4ff;
+
+    color:
+        #3157b8;
+}
+
+.dashboard-summary-success {
+    border-color:
+        #cfe8d9;
+
+    background:
+        #eef8f2;
+
+    color:
+        #33774f;
+}
+
+/* =========================================================
+   Dashboard - fluxo
+   ========================================================= */
+
+.dashboard-production-step {
+    transition:
+        background-color
+        0.15s ease;
+}
+
+.dashboard-production-step.is-active {
+    background:
+        #fafbff;
+}
+
+.dashboard-step-number {
+    border-color:
+        #dfe3e8;
+
+    background:
+        #f3f4f6;
+
+    color:
+        #6c7480;
+}
+
+.dashboard-step-number.is-active {
+    border-color:
+        #ccd7fb;
+
+    background:
+        #eef2ff;
+
+    color:
+        #3157b8;
+}
+
+/* =========================================================
+   Dashboard - badges suaves
+   ========================================================= */
+
+.app-content:has(.dashboard-kpi)
+.badge.text-bg-danger {
+    border:
+        1px solid
+        #f0c9ce;
+
+    background:
+        #fbecef
+        !important;
+
+    color:
+        #a93643
+        !important;
+}
+
+.app-content:has(.dashboard-kpi)
+.badge.text-bg-warning {
+    border:
+        1px solid
+        #ebd99e;
+
+    background:
+        #fff7df
+        !important;
+
+    color:
+        #846209
+        !important;
+}
+
+.app-content:has(.dashboard-kpi)
+.badge.text-bg-success {
+    border:
+        1px solid
+        #c8e5d4;
+
+    background:
+        #edf8f2
+        !important;
+
+    color:
+        #307449
+        !important;
+}
+
+.app-content:has(.dashboard-kpi)
+.badge.text-bg-primary {
+    border:
+        1px solid
+        #d0dafa;
+
+    background:
+        #eef2ff
+        !important;
+
+    color:
+        #3157b8
+        !important;
+}
+
+.app-content:has(.dashboard-kpi)
+.badge.text-bg-secondary {
+    border:
+        1px solid
+        #dde1e6;
+
+    background:
+        #f2f4f6
+        !important;
+
+    color:
+        #596371
+        !important;
+}
+
+/* =========================================================
+   Dashboard - tabelas
+   ========================================================= */
+
+.app-content:has(.dashboard-kpi)
+.table thead th {
+    background:
+        #f7f8fa;
+
+    color:
+        #606875;
+}
+
+.app-content:has(.dashboard-kpi)
+.table tbody td {
+    border-color:
+        #edf0f2;
+}
+
+.app-content:has(.dashboard-kpi)
+.table-hover
+> tbody
+> tr:hover
+> * {
+    --bs-table-bg-state:
+        #fafbfc;
+}
+
+/* =========================================================
+   Tabelas gerais
+   ========================================================= */
+
+.table thead th {
+    background:
+        #f7f7f8;
+
+    color:
+        #555c66;
+}
+
+.table-hover
+> tbody
+> tr:hover
+> * {
+    --bs-table-bg-state:
+        #faf9f6;
+}
+
+.table-striped
+> tbody
+> tr:nth-of-type(odd)
+> * {
+    --bs-table-bg-type:
+        #fcfcfd;
+}
+
+.table-scroll-hint {
+    background:
+        #f7f7f8;
+}
+
+/* =========================================================
+   Modal
+   ========================================================= */
+
+#appConfirmModal .modal-content {
+    box-shadow:
+        0 20px 50px
+        rgba(11, 11, 13, 0.16);
+}
+
+/* =========================================================
+   Links
+   ========================================================= */
+
+.app-content
+a:not(.btn):not(.badge) {
+    color:
+        #88691f;
+}
+
+.app-content
+a:not(.btn):not(.badge):hover {
+    color:
+        #654b13;
+}
+
+.app-content:has(.dashboard-kpi)
+a:not(.btn):not(.badge) {
+    color:
+        #3157b8;
+}
+
+.app-content:has(.dashboard-kpi)
+a:not(.btn):not(.badge):hover {
+    color:
+        #254795;
+}
+
+/* =========================================================
+   Scrollbar mobile
+   ========================================================= */
+
+@media (
+    max-width: 991.98px
+) {
+    .table-responsive::-webkit-scrollbar-track {
+        background:
+            #eceef1;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background:
+            #aaaeb6;
+    }
+}

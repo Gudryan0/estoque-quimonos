@@ -1,0 +1,222 @@
+============================================================
+ TESTE DE DESEMPENHO E ESCALABILIDADE
+============================================================
+
+Data:
+  10/09/2026 10:10:36
+
+URL:
+  http://localhost:8000/login
+
+Requisições por repetição:
+  300
+
+Concorrência:
+  30
+
+Repetições por cenário:
+  3
+
+============================================================
+ 1 nó Laravel
+============================================================
+
+
+------------------------------------------------------------
+Repetição 1 de 3
+------------------------------------------------------------
+
+Aquecendo com 20 requisições...
+Executando 300 requisições com concorrência 30...
+
+Cenário: 1 nó Laravel
+Repetição: 1
+Sucessos: 300/300
+Erros: 0
+Tempo total: 1.276 s
+Requisições/s: 235.16
+Média: 121.95 ms
+Mediana: 137.83 ms
+P95: 152.60 ms
+Mínimo: 11.62 ms
+Máximo: 162.60 ms
+Status HTTP: 200:300
+
+------------------------------------------------------------
+Repetição 2 de 3
+------------------------------------------------------------
+
+Aquecendo com 20 requisições...
+Executando 300 requisições com concorrência 30...
+
+Cenário: 1 nó Laravel
+Repetição: 2
+Sucessos: 300/300
+Erros: 0
+Tempo total: 0.866 s
+Requisições/s: 346.35
+Média: 81.99 ms
+Mediana: 79.53 ms
+P95: 112.37 ms
+Mínimo: 11.96 ms
+Máximo: 120.90 ms
+Status HTTP: 200:300
+
+------------------------------------------------------------
+Repetição 3 de 3
+------------------------------------------------------------
+
+Aquecendo com 20 requisições...
+Executando 300 requisições com concorrência 30...
+
+Cenário: 1 nó Laravel
+Repetição: 3
+Sucessos: 300/300
+Erros: 0
+Tempo total: 0.825 s
+Requisições/s: 363.67
+Média: 77.76 ms
+Mediana: 78.33 ms
+P95: 97.77 ms
+Mínimo: 12.47 ms
+Máximo: 102.19 ms
+Status HTTP: 200:300
+
+============================================================
+ 2 nós Laravel
+============================================================
+
+
+------------------------------------------------------------
+Repetição 1 de 3
+------------------------------------------------------------
+
+Aquecendo com 20 requisições...
+Executando 300 requisições com concorrência 30...
+
+Cenário: 2 nós Laravel
+Repetição: 1
+Sucessos: 300/300
+Erros: 0
+Tempo total: 0.752 s
+Requisições/s: 398.95
+Média: 69.78 ms
+Mediana: 47.52 ms
+P95: 151.00 ms
+Mínimo: 10.15 ms
+Máximo: 154.51 ms
+Status HTTP: 200:300
+
+------------------------------------------------------------
+Repetição 2 de 3
+------------------------------------------------------------
+
+Aquecendo com 20 requisições...
+Executando 300 requisições com concorrência 30...
+
+Cenário: 2 nós Laravel
+Repetição: 2
+Sucessos: 300/300
+Erros: 0
+Tempo total: 0.568 s
+Requisições/s: 528.19
+Média: 53.23 ms
+Mediana: 54.90 ms
+P95: 60.96 ms
+Mínimo: 13.90 ms
+Máximo: 64.80 ms
+Status HTTP: 200:300
+
+------------------------------------------------------------
+Repetição 3 de 3
+------------------------------------------------------------
+
+Aquecendo com 20 requisições...
+Executando 300 requisições com concorrência 30...
+
+Cenário: 2 nós Laravel
+Repetição: 3
+Sucessos: 300/300
+Erros: 0
+Tempo total: 0.567 s
+Requisições/s: 529.53
+Média: 52.89 ms
+Mediana: 54.53 ms
+P95: 61.20 ms
+Mínimo: 12.98 ms
+Máximo: 65.89 ms
+Status HTTP: 200:300
+
+============================================================
+ 3 nós Laravel
+============================================================
+
+
+------------------------------------------------------------
+Repetição 1 de 3
+------------------------------------------------------------
+
+Aquecendo com 20 requisições...
+Executando 300 requisições com concorrência 30...
+
+Cenário: 3 nós Laravel
+Repetição: 1
+Sucessos: 300/300
+Erros: 0
+Tempo total: 0.547 s
+Requisições/s: 548.69
+Média: 48.89 ms
+Mediana: 25.04 ms
+P95: 138.26 ms
+Mínimo: 10.81 ms
+Máximo: 145.11 ms
+Status HTTP: 200:300
+
+------------------------------------------------------------
+Repetição 2 de 3
+------------------------------------------------------------
+
+Aquecendo com 20 requisições...
+Executando 300 requisições com concorrência 30...
+
+Cenário: 3 nós Laravel
+Repetição: 2
+Sucessos: 300/300
+Erros: 0
+Tempo total: 0.424 s
+Requisições/s: 708.25
+Média: 39.43 ms
+Mediana: 40.42 ms
+P95: 47.42 ms
+Mínimo: 14.35 ms
+Máximo: 55.31 ms
+Status HTTP: 200:300
+
+------------------------------------------------------------
+Repetição 3 de 3
+------------------------------------------------------------
+
+Aquecendo com 20 requisições...
+Executando 300 requisições com concorrência 30...
+
+Cenário: 3 nós Laravel
+Repetição: 3
+Sucessos: 300/300
+Erros: 0
+Tempo total: 0.425 s
+Requisições/s: 705.81
+Média: 39.50 ms
+Mediana: 40.48 ms
+P95: 47.12 ms
+Mínimo: 13.76 ms
+Máximo: 53.07 ms
+Status HTTP: 200:300
+
+============================================================
+ TESTE CONCLUÍDO
+============================================================
+
+CSV:
+  evidencias/escalabilidade-20260910-101033.csv
+
+Configuração original do Nginx será restaurada.
