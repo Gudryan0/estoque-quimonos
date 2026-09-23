@@ -444,7 +444,7 @@
                         type="submit"
                         class="
                             btn
-                            btn-outline-danger
+                            btn-outline-light
                             btn-sm
                             w-100
                         "

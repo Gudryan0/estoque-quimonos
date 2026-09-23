@@ -282,25 +282,144 @@ body {
 }
 
 /* =========================================================
-   Navegação mobile
+   Sidebar / navegação mobile
    ========================================================= */
+
+.mobile-sidebar {
+    background:
+        linear-gradient(
+            180deg,
+            #0b0b0d 0%,
+            #121417 60%,
+            #17191d 100%
+        );
+
+    color:
+        var(--sidebar-text);
+
+    border-right:
+        1px solid
+        rgba(201, 162, 74, 0.18);
+}
+
+.mobile-sidebar .offcanvas-header {
+    border-bottom:
+        1px solid
+        rgba(201, 162, 74, 0.17);
+
+    color:
+        #ffffff;
+}
+
+.mobile-sidebar .offcanvas-header strong {
+    color:
+        #ffffff;
+}
+
+.mobile-sidebar
+.offcanvas-header
+.text-secondary {
+    color:
+        #969ca6
+        !important;
+}
+
+.mobile-sidebar .btn-close {
+    filter:
+        invert(1)
+        grayscale(100%)
+        brightness(200%);
+
+    opacity: 0.75;
+}
+
+.mobile-sidebar .btn-close:hover,
+.mobile-sidebar .btn-close:focus {
+    opacity: 1;
+}
+
+.mobile-sidebar .offcanvas-body {
+    color:
+        var(--sidebar-text);
+}
+
+.mobile-sidebar .sidebar-section-title {
+    color:
+        #777e89;
+}
+
+.mobile-nav-link {
+    color:
+        #c9cdd4;
+}
 
 .mobile-nav-link:hover {
     background:
-        #faf7ef;
+        rgba(201, 162, 74, 0.08);
 
     color:
-        #88691f;
+        #ffffff;
+}
+
+.mobile-nav-link:focus-visible {
+    color:
+        #ffffff;
+
+    box-shadow:
+        0 0 0 0.2rem
+        rgba(201, 162, 74, 0.22);
 }
 
 .mobile-nav-link.active {
+    position: relative;
+
     background:
-        #faf4e4;
+        rgba(201, 162, 74, 0.14);
 
     color:
-        #7e611f;
+        var(--brand-gold-light);
 
     font-weight: 650;
+}
+
+.mobile-nav-link.active::before {
+    content: "";
+
+    position: absolute;
+
+    left: -1rem;
+    top: 10px;
+    bottom: 10px;
+
+    width: 3px;
+
+    border-radius:
+        0
+        4px
+        4px
+        0;
+
+    background:
+        var(--brand-gold);
+}
+
+.mobile-user {
+    border-top:
+        1px solid
+        rgba(201, 162, 74, 0.16);
+
+    color:
+        #ffffff;
+}
+
+.mobile-user strong {
+    color:
+        #ffffff;
+}
+
+.mobile-user span {
+    color:
+        #8d939d;
 }
 
 /* =========================================================
