@@ -5,6 +5,16 @@
 @section('content')
 
 @php
+    $timezone =
+        config(
+            'app.business_timezone',
+            'America/Sao_Paulo'
+        );
+
+    $hoje =
+        now($timezone)
+            ->toDateString();
+
     $totalProdutosCriticos =
         $produtosSemEstoque
         + $produtosEstoqueBaixo;
@@ -661,7 +671,7 @@
 
         <p class="text-muted small mb-0">
             Situação das ordens e distribuição atual
-            dos itens pelas etapas produtivas.
+            dos lotes pelas etapas produtivas.
         </p>
     </div>
 
@@ -763,8 +773,8 @@
 
                                 {{
                                     $etapa['itens'] === 1
-                                        ? 'item'
-                                        : 'itens'
+                                        ? 'lote'
+                                        : 'lotes'
                                 }}
                             </small>
                         </div>
@@ -843,11 +853,11 @@
                                 </th>
 
                                 <th>
-                                    Cliente
+                                    Clientes
                                 </th>
 
                                 <th class="text-center">
-                                    Itens
+                                    Lotes
                                 </th>
 
                                 <th>
@@ -870,7 +880,8 @@
                                         $ordem->data_prevista
                                         && $ordem
                                             ->data_prevista
-                                            ->lt(today());
+                                            ->format('Y-m-d')
+                                            < $hoje;
                                 @endphp
 
                                 <tr>
@@ -892,10 +903,19 @@
                                     </td>
 
                                     <td>
-                                        {{
-                                            $ordem->cliente_nome
-                                            ?? '-'
-                                        }}
+                                        @php
+                                            $clientesDaOrdem = $ordem->itens
+                                                ->pluck('cliente_nome')
+                                                ->filter()
+                                                ->unique()
+                                                ->values();
+                                        @endphp
+
+                                        @if($clientesDaOrdem->isNotEmpty())
+                                            {{ $clientesDaOrdem->implode(', ') }}
+                                        @else
+                                            <span class="text-muted">Sem cliente</span>
+                                        @endif
                                     </td>
 
                                     <td class="text-center">
@@ -1064,6 +1084,8 @@
                                 {{
                                     $movimentacao
                                         ->data_movimentacao
+                                        ->copy()
+                                        ->timezone($timezone)
                                         ->format(
                                             'd/m/Y H:i'
                                         )

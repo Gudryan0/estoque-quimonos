@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
-use App\Models\OrdemProducao;
+use App\Models\OrdemProducaoItem;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -22,10 +22,12 @@ class ClienteController extends Controller
         $clientes = Cliente::query()
             ->select('clientes.*')
             ->selectSub(
-                OrdemProducao::query()
-                    ->selectRaw('COUNT(*)')
+                OrdemProducaoItem::query()
+                    ->selectRaw(
+                        'COUNT(DISTINCT ordem_producao_itens.id_ordem)'
+                    )
                     ->whereColumn(
-                        'ordens_producao.id_cliente',
+                        'ordem_producao_itens.id_cliente',
                         'clientes.id_cliente'
                     ),
                 'ordens_producao_count'
@@ -145,20 +147,19 @@ class ClienteController extends Controller
     public function destroy(
         Cliente $cliente
     ) {
-        $possuiOrdemProducao =
-            OrdemProducao::where(
-                'id_cliente',
-                $cliente->id_cliente
-            )->exists();
+        $possuiLoteProducao =
+            $cliente
+                ->lotesProducao()
+                ->exists();
 
-        if ($possuiOrdemProducao) {
+        if ($possuiLoteProducao) {
             return redirect()
                 ->route(
                     'clientes.index'
                 )
                 ->with(
                     'erro',
-                    'Não é possível excluir este cliente porque ele está vinculado a uma ou mais ordens de produção.'
+                    'Não é possível excluir este cliente porque ele está vinculado a um ou mais lotes de produção.'
                 );
         }
 

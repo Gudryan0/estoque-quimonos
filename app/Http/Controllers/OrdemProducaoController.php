@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Cliente;
 use App\Models\OrdemProducao;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -53,10 +52,18 @@ class OrdemProducaoController extends Controller
                 ? $request->query('prazo')
                 : '';
 
+        $hoje =
+            now(
+                config(
+                    'app.business_timezone',
+                    'America/Sao_Paulo'
+                )
+            )->toDateString();
+
         $ordens = OrdemProducao::query()
             ->with([
-                'cliente',
                 'criador',
+                'itens.cliente',
             ])
             ->withCount('itens')
             ->when(
@@ -70,10 +77,17 @@ class OrdemProducaoController extends Controller
                                     'like',
                                     "%{$busca}%"
                                 )
-                                ->orWhere(
-                                    'cliente_nome',
-                                    'like',
-                                    "%{$busca}%"
+                                ->orWhereHas(
+                                    'itens',
+                                    function ($query) use (
+                                        $busca
+                                    ) {
+                                        $query->where(
+                                            'cliente_nome',
+                                            'like',
+                                            "%{$busca}%"
+                                        );
+                                    }
                                 )
                                 ->orWhereHas(
                                     'criador',
@@ -102,7 +116,7 @@ class OrdemProducaoController extends Controller
             )
             ->when(
                 $prazo === 'atrasadas',
-                function ($query) {
+                function ($query) use ($hoje) {
                     $query
                         ->whereIn(
                             'status',
@@ -117,13 +131,13 @@ class OrdemProducaoController extends Controller
                         ->whereDate(
                             'data_prevista',
                             '<',
-                            Carbon::today()
+                            $hoje
                         );
                 }
             )
             ->when(
                 $prazo === 'hoje',
-                function ($query) {
+                function ($query) use ($hoje) {
                     $query
                         ->whereIn(
                             'status',
@@ -134,13 +148,13 @@ class OrdemProducaoController extends Controller
                         )
                         ->whereDate(
                             'data_prevista',
-                            Carbon::today()
+                            $hoje
                         );
                 }
             )
             ->when(
                 $prazo === 'futuras',
-                function ($query) {
+                function ($query) use ($hoje) {
                     $query
                         ->whereIn(
                             'status',
@@ -152,7 +166,7 @@ class OrdemProducaoController extends Controller
                         ->whereDate(
                             'data_prevista',
                             '>',
-                            Carbon::today()
+                            $hoje
                         );
                 }
             )
@@ -182,13 +196,14 @@ class OrdemProducaoController extends Controller
 
     public function create()
     {
-        $clientes = Cliente::orderBy(
-            'nome_cliente'
-        )->get();
-
+        /*
+         * A OP não possui cliente próprio.
+         *
+         * Os clientes serão informados
+         * nos lotes adicionados posteriormente.
+         */
         return view(
-            'ordens.create',
-            compact('clientes')
+            'ordens.create'
         );
     }
 
@@ -203,22 +218,15 @@ class OrdemProducaoController extends Controller
             $request
         );
 
-        $cliente = null;
-
-        if (
-            !empty(
-                $dados['id_cliente']
-            )
-        ) {
-            $cliente = Cliente::findOrFail(
-                $dados['id_cliente']
-            );
-        }
-
         do {
             $codigo =
                 'OP-'
-                . now()->format('Ymd')
+                . now(
+                    config(
+                        'app.business_timezone',
+                        'America/Sao_Paulo'
+                    )
+                )->format('Ymd')
                 . '-'
                 . Str::upper(
                     Str::random(6)
@@ -234,17 +242,6 @@ class OrdemProducaoController extends Controller
         $ordem = OrdemProducao::create([
             'codigo' =>
                 $codigo,
-
-            'id_cliente' =>
-                $cliente?->id_cliente,
-
-            /*
-             * Preserva o nome utilizado na OP
-             * mesmo que o cadastro do cliente
-             * seja alterado posteriormente.
-             */
-            'cliente_nome' =>
-                $cliente?->nome_cliente,
 
             'id_usuario_criador' =>
                 auth()->id(),
@@ -268,19 +265,31 @@ class OrdemProducaoController extends Controller
             )
             ->with(
                 'sucesso',
-                'Ordem de produção criada com sucesso.'
+                'Ordem de produção criada com sucesso. Adicione os lotes que serão produzidos.'
             );
     }
 
     public function show(
         OrdemProducao $ordem
     ) {
+        /*
+         * Cada item representa um lote.
+         *
+         * As variações e respectivas quantidades
+         * pertencem ao lote, não diretamente à OP.
+         */
         $ordem->load([
-            'cliente',
             'criador',
-            'itens.variacao.produto',
+            'cancelador',
+
+            'itens.produto',
+            'itens.cliente',
+
+            'itens.variacoes.variacao',
+
             'historicos.usuario',
-            'historicos.item.variacao.produto',
+            'historicos.item.produto',
+            'historicos.item.variacoes.variacao',
         ]);
 
         return view(
@@ -295,7 +304,7 @@ class OrdemProducaoController extends Controller
         /*
          * A interface bloqueia a edição,
          * mas esta proteção também impede
-         * acesso direto pela URL.
+         * o acesso direto pela URL.
          */
         if (
             $ordem->status
@@ -312,16 +321,9 @@ class OrdemProducaoController extends Controller
                 );
         }
 
-        $clientes = Cliente::orderBy(
-            'nome_cliente'
-        )->get();
-
         return view(
             'ordens.edit',
-            compact(
-                'ordem',
-                'clientes'
-            )
+            compact('ordem')
         );
     }
 
@@ -353,25 +355,7 @@ class OrdemProducaoController extends Controller
             $ordem
         );
 
-        $cliente = null;
-
-        if (
-            !empty(
-                $dados['id_cliente']
-            )
-        ) {
-            $cliente = Cliente::findOrFail(
-                $dados['id_cliente']
-            );
-        }
-
         $ordem->update([
-            'id_cliente' =>
-                $cliente?->id_cliente,
-
-            'cliente_nome' =>
-                $cliente?->nome_cliente,
-
             'data_prevista' =>
                 $dados['data_prevista']
                 ?? null,
@@ -421,7 +405,7 @@ class OrdemProducaoController extends Controller
                 )
                 ->with(
                     'erro',
-                    'Remova os itens antes de excluir a ordem.'
+                    'Remova os lotes antes de excluir a ordem.'
                 );
         }
 
@@ -462,12 +446,6 @@ class OrdemProducaoController extends Controller
     ): array {
         $dados = $request->validate(
             [
-                'id_cliente' => [
-                    'nullable',
-                    'integer',
-                    'exists:clientes,id_cliente',
-                ],
-
                 'data_prevista' => [
                     'nullable',
                     'date',
@@ -480,12 +458,6 @@ class OrdemProducaoController extends Controller
                 ],
             ],
             [
-                'id_cliente.integer' =>
-                    'O cliente selecionado é inválido.',
-
-                'id_cliente.exists' =>
-                    'O cliente selecionado não existe.',
-
                 'data_prevista.date' =>
                     'Informe uma data prevista válida.',
 
@@ -518,6 +490,14 @@ class OrdemProducaoController extends Controller
             $dataPrevista
         )->startOfDay();
 
+        $hoje =
+            now(
+                config(
+                    'app.business_timezone',
+                    'America/Sao_Paulo'
+                )
+            )->toDateString();
+
         /*
          * Criação:
          * uma nova OP não pode nascer
@@ -525,9 +505,8 @@ class OrdemProducaoController extends Controller
          */
         if ($ordem === null) {
             if (
-                $novaData->lt(
-                    Carbon::today()
-                )
+                $novaData->format('Y-m-d')
+                    < $hoje
             ) {
                 throw ValidationException::withMessages([
                     'data_prevista' =>
@@ -567,9 +546,8 @@ class OrdemProducaoController extends Controller
         if (
             $dataFoiAlterada
             &&
-            $novaData->lt(
-                Carbon::today()
-            )
+            $novaData->format('Y-m-d')
+                < $hoje
         ) {
             throw ValidationException::withMessages([
                 'data_prevista' =>
@@ -581,11 +559,6 @@ class OrdemProducaoController extends Controller
     private function normalizarDados(
         Request $request
     ): void {
-        $idCliente =
-            $request->input(
-                'id_cliente'
-            );
-
         $dataPrevista =
             $request->input(
                 'data_prevista'
@@ -595,15 +568,6 @@ class OrdemProducaoController extends Controller
             $request->input(
                 'observacao'
             );
-
-        if (is_string($idCliente)) {
-            $idCliente =
-                trim($idCliente);
-
-            if ($idCliente === '') {
-                $idCliente = null;
-            }
-        }
 
         if (is_string($dataPrevista)) {
             $dataPrevista =
@@ -624,9 +588,6 @@ class OrdemProducaoController extends Controller
         }
 
         $request->merge([
-            'id_cliente' =>
-                $idCliente,
-
             'data_prevista' =>
                 $dataPrevista,
 

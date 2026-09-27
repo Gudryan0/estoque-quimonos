@@ -51,15 +51,13 @@ class FluxoProducaoTest extends TestCase
         );
 
         /*
-         * Necessidade:
-         *
-         * item 1:
+         * Lote 1:
          * 2 × 2,5 = 5
          *
-         * item 2:
+         * Lote 2:
          * 3 × 2,5 = 7,5
          *
-         * total:
+         * Total:
          * 12,5
          */
         $resposta = $this->post(
@@ -400,61 +398,17 @@ class FluxoProducaoTest extends TestCase
             )
         );
 
-        /*
-         * corte
-         * → bordado
-         */
-        $this->post(
-            route(
-                'ordens.itens.avancar',
-                [
-                    $idOrdem,
-                    $idItem,
-                ]
-            )
-        );
-
-        /*
-         * bordado
-         * → costura
-         */
-        $this->post(
-            route(
-                'ordens.itens.avancar',
-                [
-                    $idOrdem,
-                    $idItem,
-                ]
-            )
-        );
-
-        /*
-         * costura
-         * → finalizacao
-         */
-        $this->post(
-            route(
-                'ordens.itens.avancar',
-                [
-                    $idOrdem,
-                    $idItem,
-                ]
-            )
-        );
-
-        /*
-         * finalizacao
-         * → concluido
-         */
-        $resposta = $this->post(
-            route(
-                'ordens.itens.avancar',
-                [
-                    $idOrdem,
-                    $idItem,
-                ]
-            )
-        );
+        for ($i = 0; $i < 4; $i++) {
+            $resposta = $this->post(
+                route(
+                    'ordens.itens.avancar',
+                    [
+                        $idOrdem,
+                        $idItem,
+                    ]
+                )
+            );
+        }
 
         $resposta->assertRedirect(
             route(
@@ -476,6 +430,7 @@ class FluxoProducaoTest extends TestCase
             [
                 'id_item' => $idItem,
                 'etapa_atual' => 'concluido',
+                'quantidade' => 2,
             ]
         );
 
@@ -521,6 +476,378 @@ class FluxoProducaoTest extends TestCase
                 ->value(
                     'produto_estoque_adicionado_at'
                 )
+        );
+    }
+
+    public function test_lote_com_varios_tamanhos_consume_e_adiciona_cada_variacao_ao_estoque(): void
+    {
+        $idVariacaoA1 =
+            $this->criarProdutoVariacao(
+                quantidade: 0,
+                tamanho: 'A1',
+                cor: 'Azul'
+            );
+
+        $idProduto = (int)
+            DB::table('produto_variacoes')
+                ->where(
+                    'id_variacao',
+                    $idVariacaoA1
+                )
+                ->value('id_produto');
+
+        $idVariacaoA2 =
+            $this->criarVariacaoNoProduto(
+                $idProduto,
+                tamanho: 'A2',
+                cor: 'Azul',
+                quantidade: 0
+            );
+
+        $idMaterial =
+            $this->criarMaterial(
+                quantidade: 20
+            );
+
+        /*
+         * A1:
+         * 3 peças × 1 = 3
+         *
+         * A2:
+         * 2 peças × 1,5 = 3
+         *
+         * Total:
+         * 6
+         */
+        $this->criarComposicao(
+            $idVariacaoA1,
+            $idMaterial,
+            1
+        );
+
+        $this->criarComposicao(
+            $idVariacaoA2,
+            $idMaterial,
+            1.5
+        );
+
+        $idOrdem =
+            $this->criarOrdem();
+
+        $idLote =
+            $this->criarLote(
+                $idOrdem,
+                [
+                    $idVariacaoA1 => 3,
+                    $idVariacaoA2 => 2,
+                ]
+            );
+
+        $this->post(
+            route(
+                'ordens.iniciar',
+                $idOrdem
+            )
+        );
+
+        $estoqueMaterial =
+            DB::table('materiais')
+                ->where(
+                    'id_material',
+                    $idMaterial
+                )
+                ->value('quantidade');
+
+        $this->assertEqualsWithDelta(
+            14,
+            (float) $estoqueMaterial,
+            0.0001
+        );
+
+        $this->assertDatabaseHas(
+            'ordem_producao_itens',
+            [
+                'id_item' =>
+                    $idLote,
+
+                'quantidade' =>
+                    5,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'ordem_producao_item_variacoes',
+            [
+                'id_item' =>
+                    $idLote,
+
+                'id_variacao' =>
+                    $idVariacaoA1,
+
+                'quantidade' =>
+                    3,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'ordem_producao_item_variacoes',
+            [
+                'id_item' =>
+                    $idLote,
+
+                'id_variacao' =>
+                    $idVariacaoA2,
+
+                'quantidade' =>
+                    2,
+            ]
+        );
+
+        for ($i = 0; $i < 4; $i++) {
+            $this->post(
+                route(
+                    'ordens.itens.avancar',
+                    [
+                        $idOrdem,
+                        $idLote,
+                    ]
+                )
+            );
+        }
+
+        $this->assertDatabaseHas(
+            'ordens_producao',
+            [
+                'id_ordem' =>
+                    $idOrdem,
+
+                'status' =>
+                    'concluida',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'produto_variacoes',
+            [
+                'id_variacao' =>
+                    $idVariacaoA1,
+
+                'quantidade' =>
+                    3,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'produto_variacoes',
+            [
+                'id_variacao' =>
+                    $idVariacaoA2,
+
+                'quantidade' =>
+                    2,
+            ]
+        );
+
+        $this->assertEquals(
+            2,
+            DB::table('movimentacoes')
+                ->where(
+                    'id_item_producao',
+                    $idLote
+                )
+                ->where(
+                    'origem',
+                    'producao_conclusao'
+                )
+                ->count()
+        );
+    }
+
+    public function test_reversao_de_lote_com_varios_tamanhos_remove_todas_as_variacoes(): void
+    {
+        $idVariacaoA1 =
+            $this->criarProdutoVariacao(
+                quantidade: 0,
+                tamanho: 'A1',
+                cor: 'Azul'
+            );
+
+        $idProduto = (int)
+            DB::table('produto_variacoes')
+                ->where(
+                    'id_variacao',
+                    $idVariacaoA1
+                )
+                ->value('id_produto');
+
+        $idVariacaoA2 =
+            $this->criarVariacaoNoProduto(
+                $idProduto,
+                tamanho: 'A2',
+                cor: 'Azul',
+                quantidade: 0
+            );
+
+        $idMaterial =
+            $this->criarMaterial(
+                quantidade: 50
+            );
+
+        $this->criarComposicao(
+            $idVariacaoA1,
+            $idMaterial,
+            1
+        );
+
+        $this->criarComposicao(
+            $idVariacaoA2,
+            $idMaterial,
+            1
+        );
+
+        $idOrdem =
+            $this->criarOrdem();
+
+        $idLoteConcluido =
+            $this->criarLote(
+                $idOrdem,
+                [
+                    $idVariacaoA1 => 2,
+                    $idVariacaoA2 => 1,
+                ]
+            );
+
+        /*
+         * Mantém outro lote pendente para que
+         * a OP continue em produção e permita
+         * reverter a conclusão do primeiro.
+         */
+        $this->criarLote(
+            $idOrdem,
+            [
+                $idVariacaoA1 => 1,
+            ]
+        );
+
+        $this->post(
+            route(
+                'ordens.iniciar',
+                $idOrdem
+            )
+        );
+
+        for ($i = 0; $i < 4; $i++) {
+            $this->post(
+                route(
+                    'ordens.itens.avancar',
+                    [
+                        $idOrdem,
+                        $idLoteConcluido,
+                    ]
+                )
+            );
+        }
+
+        $this->assertDatabaseHas(
+            'ordens_producao',
+            [
+                'id_ordem' =>
+                    $idOrdem,
+
+                'status' =>
+                    'em_producao',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'produto_variacoes',
+            [
+                'id_variacao' =>
+                    $idVariacaoA1,
+
+                'quantidade' =>
+                    2,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'produto_variacoes',
+            [
+                'id_variacao' =>
+                    $idVariacaoA2,
+
+                'quantidade' =>
+                    1,
+            ]
+        );
+
+        $resposta = $this->post(
+            route(
+                'ordens.itens.reverter',
+                [
+                    $idOrdem,
+                    $idLoteConcluido,
+                ]
+            )
+        );
+
+        $resposta
+            ->assertRedirect(
+                route(
+                    'ordens.show',
+                    $idOrdem
+                )
+            )
+            ->assertSessionHas('sucesso');
+
+        $this->assertDatabaseHas(
+            'ordem_producao_itens',
+            [
+                'id_item' =>
+                    $idLoteConcluido,
+
+                'etapa_atual' =>
+                    'finalizacao',
+
+                'produto_estoque_adicionado_at' =>
+                    null,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'produto_variacoes',
+            [
+                'id_variacao' =>
+                    $idVariacaoA1,
+
+                'quantidade' =>
+                    0,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'produto_variacoes',
+            [
+                'id_variacao' =>
+                    $idVariacaoA2,
+
+                'quantidade' =>
+                    0,
+            ]
+        );
+
+        $this->assertEquals(
+            2,
+            DB::table('movimentacoes')
+                ->where(
+                    'id_item_producao',
+                    $idLoteConcluido
+                )
+                ->where(
+                    'origem',
+                    'producao_reversao'
+                )
+                ->count()
         );
     }
 
@@ -574,8 +901,11 @@ class FluxoProducaoTest extends TestCase
         $this->assertDatabaseHas(
             'ordens_producao',
             [
-                'id_ordem' => $idOrdem,
-                'status' => 'concluida',
+                'id_ordem' =>
+                    $idOrdem,
+
+                'status' =>
+                    'concluida',
             ]
         );
 
@@ -612,22 +942,25 @@ class FluxoProducaoTest extends TestCase
                 'Esta ordem já foi concluída definitivamente e não permite mais reversão de etapas.'
             );
 
-        /*
-         * Nada deve ter mudado.
-         */
         $this->assertDatabaseHas(
             'ordens_producao',
             [
-                'id_ordem' => $idOrdem,
-                'status' => 'concluida',
+                'id_ordem' =>
+                    $idOrdem,
+
+                'status' =>
+                    'concluida',
             ]
         );
 
         $this->assertDatabaseHas(
             'ordem_producao_itens',
             [
-                'id_item' => $idItem,
-                'etapa_atual' => 'concluido',
+                'id_item' =>
+                    $idItem,
+
+                'etapa_atual' =>
+                    'concluido',
             ]
         );
 
@@ -658,13 +991,15 @@ class FluxoProducaoTest extends TestCase
     }
 
     private function criarProdutoVariacao(
-        int $quantidade = 0
+        int $quantidade = 0,
+        string $tamanho = 'A2',
+        string $cor = 'Branco'
     ): int {
         $idProduto =
             DB::table('produtos')
                 ->insertGetId([
                     'nome_produto' =>
-                        'Kimono Teste',
+                        'Kimono Teste ' . uniqid(),
 
                     'categoria' =>
                         'Kimono',
@@ -682,6 +1017,20 @@ class FluxoProducaoTest extends TestCase
                         now(),
                 ]);
 
+        return $this->criarVariacaoNoProduto(
+            $idProduto,
+            $tamanho,
+            $cor,
+            $quantidade
+        );
+    }
+
+    private function criarVariacaoNoProduto(
+        int $idProduto,
+        string $tamanho,
+        string $cor,
+        int $quantidade = 0
+    ): int {
         return DB::table(
             'produto_variacoes'
         )->insertGetId([
@@ -689,10 +1038,10 @@ class FluxoProducaoTest extends TestCase
                 $idProduto,
 
             'tamanho' =>
-                'A2',
+                $tamanho,
 
             'cor' =>
-                'Branco',
+                $cor,
 
             'quantidade' =>
                 $quantidade,
@@ -787,12 +1136,6 @@ class FluxoProducaoTest extends TestCase
                 'OP-TESTE-'
                 . uniqid(),
 
-            'id_cliente' =>
-                null,
-
-            'cliente_nome' =>
-                null,
-
             'id_usuario_criador' =>
                 $this->usuario->id,
 
@@ -820,50 +1163,156 @@ class FluxoProducaoTest extends TestCase
         int $idVariacao,
         int $quantidade
     ): int {
-        return DB::table(
-            'ordem_producao_itens'
-        )->insertGetId([
-            'id_ordem' =>
-                $idOrdem,
+        return $this->criarLote(
+            $idOrdem,
+            [
+                $idVariacao =>
+                    $quantidade,
+            ]
+        );
+    }
 
-            'id_variacao' =>
-                $idVariacao,
+    private function criarLote(
+        int $idOrdem,
+        array $quantidadesPorVariacao
+    ): int {
+        if ($quantidadesPorVariacao === []) {
+            throw new \RuntimeException(
+                'O lote precisa possuir pelo menos uma variação.'
+            );
+        }
 
-            'quantidade' =>
-                $quantidade,
+        $idsVariacoes = array_map(
+            'intval',
+            array_keys(
+                $quantidadesPorVariacao
+            )
+        );
 
-            'etapa_atual' =>
-                'corte',
+        $variacoes =
+            DB::table('produto_variacoes')
+                ->whereIn(
+                    'id_variacao',
+                    $idsVariacoes
+                )
+                ->get()
+                ->keyBy('id_variacao');
 
-            'descricao_bordado' =>
-                null,
+        if (
+            $variacoes->count()
+            !== count($idsVariacoes)
+        ) {
+            throw new \RuntimeException(
+                'Uma das variações do lote não foi encontrada.'
+            );
+        }
 
-            'cor_linha' =>
-                null,
+        $primeiraVariacao =
+            $variacoes->first();
 
-            'etiqueta' =>
-                null,
+        foreach ($variacoes as $variacao) {
+            if (
+                (int) $variacao->id_produto
+                    !==
+                (int) $primeiraVariacao->id_produto
+                ||
+                $variacao->cor
+                    !==
+                $primeiraVariacao->cor
+            ) {
+                throw new \RuntimeException(
+                    'As variações do lote precisam pertencer ao mesmo produto e cor.'
+                );
+            }
+        }
 
-            'posicao_etiqueta' =>
-                null,
+        $total = array_sum(
+            array_map(
+                'intval',
+                $quantidadesPorVariacao
+            )
+        );
 
-            'responsavel_costura' =>
-                null,
+        $idItem =
+            DB::table(
+                'ordem_producao_itens'
+            )->insertGetId([
+                'id_ordem' =>
+                    $idOrdem,
 
-            'observacao' =>
-                null,
+                'id_produto' =>
+                    $primeiraVariacao->id_produto,
 
-            'materiais_consumidos_at' =>
-                null,
+                'id_cliente' =>
+                    null,
 
-            'produto_estoque_adicionado_at' =>
-                null,
+                'cliente_nome' =>
+                    null,
 
-            'created_at' =>
-                now(),
+                'cor' =>
+                    $primeiraVariacao->cor,
 
-            'updated_at' =>
-                now(),
-        ]);
+                'quantidade' =>
+                    $total,
+
+                'etapa_atual' =>
+                    'corte',
+
+                'descricao_bordado' =>
+                    null,
+
+                'cor_linha' =>
+                    null,
+
+                'etiqueta' =>
+                    null,
+
+                'posicao_etiqueta' =>
+                    null,
+
+                'responsavel_costura' =>
+                    null,
+
+                'observacao' =>
+                    null,
+
+                'materiais_consumidos_at' =>
+                    null,
+
+                'produto_estoque_adicionado_at' =>
+                    null,
+
+                'created_at' =>
+                    now(),
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        foreach (
+            $quantidadesPorVariacao
+            as $idVariacao => $quantidade
+        ) {
+            DB::table(
+                'ordem_producao_item_variacoes'
+            )->insert([
+                'id_item' =>
+                    $idItem,
+
+                'id_variacao' =>
+                    (int) $idVariacao,
+
+                'quantidade' =>
+                    (int) $quantidade,
+
+                'created_at' =>
+                    now(),
+
+                'updated_at' =>
+                    now(),
+            ]);
+        }
+
+        return $idItem;
     }
 }

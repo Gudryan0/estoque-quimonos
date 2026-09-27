@@ -196,6 +196,14 @@ class DashboardController extends Controller
             'concluida'
         )->count();
 
+        $hoje =
+            now(
+                config(
+                    'app.business_timezone',
+                    'America/Sao_Paulo'
+                )
+            )->toDateString();
+
         $ordensAtrasadas = OrdemProducao::whereIn(
             'status',
             [
@@ -209,7 +217,7 @@ class DashboardController extends Controller
             ->whereDate(
                 'data_prevista',
                 '<',
-                today()
+                $hoje
             )
             ->count();
 
@@ -296,7 +304,7 @@ class DashboardController extends Controller
         */
 
         $ordensAtivas = OrdemProducao::with(
-            'cliente'
+            'itens'
         )
             ->withCount('itens')
             ->whereIn(

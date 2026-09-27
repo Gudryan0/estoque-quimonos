@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Material;
 use App\Models\Movimentacao;
 use App\Models\ProdutoVariacao;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -79,165 +82,292 @@ class MovimentacaoController extends Controller
                 )
             );
 
-        $movimentacoes = Movimentacao::query()
-            ->with([
-                'usuario',
-                'variacao.produto',
-                'material',
-            ])
-            ->when(
-                $busca !== '',
-                function ($query) use ($busca) {
-                    $query->where(
-                        function ($query) use ($busca) {
-                            $query
-                                ->where(
-                                    'observacao',
-                                    'like',
-                                    "%{$busca}%"
-                                )
-                                ->orWhereHas(
-                                    'usuario',
-                                    function ($query) use (
-                                        $busca
-                                    ) {
-                                        $query->where(
-                                            'name',
-                                            'like',
-                                            "%{$busca}%"
-                                        );
-                                    }
-                                )
-                                ->orWhereHas(
-                                    'variacao',
-                                    function ($query) use (
-                                        $busca
-                                    ) {
-                                        $query
-                                            ->where(
-                                                'tamanho',
+        $timezone =
+            config(
+                'app.business_timezone',
+                'America/Sao_Paulo'
+            );
+
+        $inicioUtc =
+            $dataInicio !== ''
+                ? Carbon::parse(
+                    $dataInicio,
+                    $timezone
+                )
+                    ->startOfDay()
+                    ->utc()
+                : null;
+
+        $fimUtc =
+            $dataFim !== ''
+                ? Carbon::parse(
+                    $dataFim,
+                    $timezone
+                )
+                    ->endOfDay()
+                    ->utc()
+                : null;
+
+        $movimentacoesFiltradas =
+            Movimentacao::query()
+                ->with([
+                    'usuario',
+                    'variacao.produto',
+                    'material',
+                    'ordem',
+                    'itemProducao.produto',
+                    'itemProducao.cliente',
+                    'itemProducao.variacoes.variacao',
+                ])
+                ->when(
+                    $busca !== '',
+                    function ($query) use ($busca) {
+                        $query->where(
+                            function ($query) use ($busca) {
+                                $query
+                                    ->where(
+                                        'observacao',
+                                        'like',
+                                        "%{$busca}%"
+                                    )
+                                    ->orWhereHas(
+                                        'usuario',
+                                        function ($query) use (
+                                            $busca
+                                        ) {
+                                            $query->where(
+                                                'name',
                                                 'like',
                                                 "%{$busca}%"
-                                            )
-                                            ->orWhere(
-                                                'cor',
+                                            );
+                                        }
+                                    )
+                                    ->orWhereHas(
+                                        'variacao',
+                                        function ($query) use (
+                                            $busca
+                                        ) {
+                                            $query
+                                                ->where(
+                                                    'tamanho',
+                                                    'like',
+                                                    "%{$busca}%"
+                                                )
+                                                ->orWhere(
+                                                    'cor',
+                                                    'like',
+                                                    "%{$busca}%"
+                                                )
+                                                ->orWhereHas(
+                                                    'produto',
+                                                    function (
+                                                        $query
+                                                    ) use (
+                                                        $busca
+                                                    ) {
+                                                        $query
+                                                            ->where(
+                                                                'nome_produto',
+                                                                'like',
+                                                                "%{$busca}%"
+                                                            );
+                                                    }
+                                                );
+                                        }
+                                    )
+                                    ->orWhereHas(
+                                        'material',
+                                        function ($query) use (
+                                            $busca
+                                        ) {
+                                            $query
+                                                ->where(
+                                                    'nome_material',
+                                                    'like',
+                                                    "%{$busca}%"
+                                                )
+                                                ->orWhere(
+                                                    'cor',
+                                                    'like',
+                                                    "%{$busca}%"
+                                                );
+                                        }
+                                    )
+                                    ->orWhereHas(
+                                        'ordem',
+                                        function ($query) use (
+                                            $busca
+                                        ) {
+                                            $query->where(
+                                                'codigo',
                                                 'like',
                                                 "%{$busca}%"
-                                            )
-                                            ->orWhereHas(
-                                                'produto',
-                                                function (
-                                                    $query
-                                                ) use (
-                                                    $busca
-                                                ) {
-                                                    $query
-                                                        ->where(
-                                                            'nome_produto',
+                                            );
+                                        }
+                                    )
+                                    ->orWhereHas(
+                                        'itemProducao',
+                                        function ($query) use (
+                                            $busca
+                                        ) {
+                                            $query
+                                                ->where(
+                                                    'cliente_nome',
+                                                    'like',
+                                                    "%{$busca}%"
+                                                )
+                                                ->orWhere(
+                                                    'cor',
+                                                    'like',
+                                                    "%{$busca}%"
+                                                )
+                                                ->orWhere(
+                                                    'responsavel_costura',
+                                                    'like',
+                                                    "%{$busca}%"
+                                                )
+                                                ->orWhereHas(
+                                                    'produto',
+                                                    function (
+                                                        $query
+                                                    ) use (
+                                                        $busca
+                                                    ) {
+                                                        $query
+                                                            ->where(
+                                                                'nome_produto',
+                                                                'like',
+                                                                "%{$busca}%"
+                                                            );
+                                                    }
+                                                )
+                                                ->orWhereHas(
+                                                    'variacoes.variacao',
+                                                    function (
+                                                        $query
+                                                    ) use (
+                                                        $busca
+                                                    ) {
+                                                        $query->where(
+                                                            'tamanho',
                                                             'like',
                                                             "%{$busca}%"
                                                         );
-                                                }
-                                            );
-                                    }
-                                )
-                                ->orWhereHas(
-                                    'material',
-                                    function ($query) use (
-                                        $busca
-                                    ) {
-                                        $query
-                                            ->where(
-                                                'nome_material',
-                                                'like',
-                                                "%{$busca}%"
-                                            )
-                                            ->orWhere(
-                                                'cor',
-                                                'like',
-                                                "%{$busca}%"
-                                            );
-                                    }
-                                );
-                        }
-                    );
-                }
-            )
-            ->when(
-                $tipoItem === 'produto',
-                function ($query) {
-                    $query->whereNotNull(
-                        'id_variacao'
-                    );
-                }
-            )
-            ->when(
-                $tipoItem === 'material',
-                function ($query) {
-                    $query->whereNotNull(
-                        'id_material'
-                    );
-                }
-            )
-            ->when(
-                $tipoMovimentacao !== '',
-                function ($query) use (
-                    $tipoMovimentacao
-                ) {
-                    $query->where(
-                        'tipo_movimentacao',
+                                                    }
+                                                );
+                                        }
+                                    );
+                            }
+                        );
+                    }
+                )
+                ->when(
+                    $tipoItem === 'produto',
+                    function ($query) {
+                        $query->whereNotNull(
+                            'id_variacao'
+                        );
+                    }
+                )
+                ->when(
+                    $tipoItem === 'material',
+                    function ($query) {
+                        $query->whereNotNull(
+                            'id_material'
+                        );
+                    }
+                )
+                ->when(
+                    $tipoMovimentacao !== '',
+                    function ($query) use (
                         $tipoMovimentacao
-                    );
-                }
-            )
-            ->when(
-                $origem !== '',
-                function ($query) use (
-                    $origem
-                ) {
-                    $query->where(
-                        'origem',
+                    ) {
+                        $query->where(
+                            'tipo_movimentacao',
+                            $tipoMovimentacao
+                        );
+                    }
+                )
+                ->when(
+                    $origem !== '',
+                    function ($query) use (
                         $origem
-                    );
-                }
-            )
-            ->when(
-                $dataInicio !== '',
-                function ($query) use (
-                    $dataInicio
-                ) {
-                    $query->whereDate(
-                        'data_movimentacao',
-                        '>=',
-                        $dataInicio
-                    );
-                }
-            )
-            ->when(
-                $dataFim !== '',
-                function ($query) use (
-                    $dataFim
-                ) {
-                    $query->whereDate(
-                        'data_movimentacao',
-                        '<=',
-                        $dataFim
-                    );
-                }
-            )
-            ->orderByDesc(
-                'data_movimentacao'
-            )
-            ->orderByDesc(
-                'id_movimentacao'
-            )
-            ->paginate(25)
-            ->withQueryString();
+                    ) {
+                        $query->where(
+                            'origem',
+                            $origem
+                        );
+                    }
+                )
+                ->when(
+                    $inicioUtc !== null,
+                    function ($query) use (
+                        $inicioUtc
+                    ) {
+                        $query->where(
+                            'data_movimentacao',
+                            '>=',
+                            $inicioUtc
+                        );
+                    }
+                )
+                ->when(
+                    $fimUtc !== null,
+                    function ($query) use (
+                        $fimUtc
+                    ) {
+                        $query->where(
+                            'data_movimentacao',
+                            '<=',
+                            $fimUtc
+                        );
+                    }
+                )
+                ->orderByDesc(
+                    'data_movimentacao'
+                )
+                ->orderByDesc(
+                    'id_movimentacao'
+                )
+                ->get();
+
+        $blocos =
+            $this->agruparMovimentacoesParaExibicao(
+                $movimentacoesFiltradas
+            );
+
+        $paginaAtual =
+            LengthAwarePaginator::resolveCurrentPage(
+                'page'
+            );
+
+        $porPagina = 25;
+
+        $blocosMovimentacao =
+            new LengthAwarePaginator(
+                $blocos
+                    ->forPage(
+                        $paginaAtual,
+                        $porPagina
+                    )
+                    ->values(),
+                $blocos->count(),
+                $porPagina,
+                $paginaAtual,
+                [
+                    'path' => $request->url(),
+                    'pageName' => 'page',
+                ]
+            );
+
+        $blocosMovimentacao->appends(
+            $request->query()
+        );
 
         return view(
             'movimentacoes.index',
             compact(
-                'movimentacoes',
+                'blocosMovimentacao',
                 'busca',
                 'tipoItem',
                 'tipoMovimentacao',
@@ -845,6 +975,64 @@ class MovimentacaoController extends Controller
                 'sucesso',
                 'Movimentação de material registrada com sucesso.'
             );
+    }
+
+    private function agruparMovimentacoesParaExibicao(
+        Collection $movimentacoes
+    ): Collection {
+        return $movimentacoes
+            ->groupBy(
+                function (
+                    Movimentacao $movimentacao
+                ): string {
+                    if (
+                        $movimentacao->origem
+                            === 'producao_consumo'
+                        &&
+                        $movimentacao
+                            ->id_item_producao
+                            !== null
+                    ) {
+                        return
+                            'consumo_lote_'
+                            . $movimentacao
+                                ->id_item_producao;
+                    }
+
+                    return
+                        'movimentacao_'
+                        . $movimentacao
+                            ->id_movimentacao;
+                }
+            )
+            ->map(
+                function (
+                    Collection $grupo
+                ): array {
+                    $principal =
+                        $grupo->first();
+
+                    $agrupadoPorLote =
+                        $principal->origem
+                            === 'producao_consumo'
+                        &&
+                        $principal
+                            ->id_item_producao
+                            !== null;
+
+                    return [
+                        'agrupado_por_lote' =>
+                            $agrupadoPorLote,
+
+                        'principal' =>
+                            $principal,
+
+                        'movimentacoes' =>
+                            $grupo->values(),
+                    ];
+                }
+            )
+            ->values();
     }
 
     private function normalizarQuantidadeMaterial(

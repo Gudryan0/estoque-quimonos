@@ -5,6 +5,22 @@
 @section('content')
 
 @php
+    $clientesAtendidos = $ordem->itens
+        ->pluck('cliente_nome')
+        ->filter()
+        ->unique()
+        ->values();
+
+    $timezone =
+        config(
+            'app.business_timezone',
+            'America/Sao_Paulo'
+        );
+
+    $hoje =
+        now($timezone)
+            ->toDateString();
+
     $statusConfig = [
         'planejada' => [
             'texto' => 'Planejada',
@@ -140,7 +156,8 @@
         &&
         $ordem
             ->data_prevista
-            ->lt(today());
+            ->format('Y-m-d')
+            < $hoje;
 @endphp
 
 <div class="mb-3">
@@ -191,15 +208,14 @@
 
             <div class="col-sm-6 col-lg-3">
                 <div class="small text-muted mb-1">
-                    Cliente
+                    Clientes atendidos
                 </div>
 
-                <strong>
-                    {{
-                        $ordem->cliente_nome
-                        ?? 'Sem cliente definido'
-                    }}
-                </strong>
+                @if($clientesAtendidos->isNotEmpty())
+                    <strong>{{ $clientesAtendidos->implode(', ') }}</strong>
+                @else
+                    <span class="text-muted">Sem cliente definido</span>
+                @endif
             </div>
 
             <div class="col-sm-6 col-lg-3">
@@ -273,8 +289,8 @@
 
                     {{
                         $totalItens === 1
-                            ? 'item'
-                            : 'itens'
+                            ? 'lote'
+                            : 'lotes'
                     }}
                 </strong>
 
@@ -400,7 +416,7 @@
             Ordem encerrada definitivamente.
         </strong>
 
-        Todos os itens foram concluídos e esta ordem
+        Todos os lotes foram concluídos e esta ordem
         não permite mais reversão de etapas,
         edição ou cancelamento.
     </div>
@@ -428,7 +444,7 @@
                 </h2>
 
                 <p class="text-muted mb-0">
-                    Revise os itens antes de iniciar.
+                    Revise os lotes antes de iniciar.
                     Depois disso, eles não poderão mais
                     ser editados ou removidos.
                 </p>
@@ -444,7 +460,7 @@
                         )
                     }}"
                     method="POST"
-                    data-confirm="Deseja iniciar esta ordem de produção? Os itens deixarão de poder ser editados ou removidos e os materiais definidos nas fichas de consumo serão baixados automaticamente do estoque."
+                    data-confirm="Deseja iniciar esta ordem de produção? Os lotes deixarão de poder ser editados ou removidos e os materiais definidos nas fichas de consumo serão baixados automaticamente do estoque."
                     data-confirm-title="Iniciar produção"
                     data-confirm-button="Iniciar produção"
                     data-confirm-variant="primary"
@@ -464,7 +480,7 @@
                 <span
                     class="d-inline-block"
                     tabindex="0"
-                    title="Iniciar indisponível — Adicione pelo menos um item antes de iniciar a produção."
+                    title="Iniciar indisponível — Adicione pelo menos um lote antes de iniciar a produção."
                 >
                     <button
                         type="button"
@@ -496,7 +512,7 @@
             "
         >
             {{ $quantidadeItensPendentes }}
-            pendentes
+            lotes pendentes
         </span>
 
         <span
@@ -510,7 +526,7 @@
             "
         >
             {{ $itensConcluidos }}
-            concluídos
+            lotes concluídos
         </span>
 
     </div>
@@ -530,11 +546,11 @@
 >
     <div>
         <h2 class="h4 mb-1">
-            Itens da produção
+            Lotes da produção
         </h2>
 
         <p class="text-muted small mb-0">
-            Produtos e especificações desta ordem.
+            Produtos, clientes e especificações desta ordem.
         </p>
     </div>
 
@@ -549,7 +565,7 @@
             }}"
             class="btn btn-primary"
         >
-            Adicionar item
+            Adicionar lote
         </a>
 
     @endif
@@ -561,11 +577,11 @@
         <div class="card-body text-center py-5">
 
             <h3 class="h5 mb-2">
-                Nenhum item adicionado
+                Nenhum lote adicionado
             </h3>
 
             <p class="text-muted mb-3">
-                Adicione pelo menos um produto
+                Adicione pelo menos um lote
                 antes de iniciar esta ordem.
             </p>
 
@@ -580,7 +596,7 @@
                     }}"
                     class="btn btn-primary"
                 >
-                    Adicionar item
+                    Adicionar lote
                 </a>
 
             @endif
@@ -652,48 +668,35 @@
                         <tr>
                             <td>
                                 <strong>
-                                    {{
-                                        $item
-                                            ->variacao
-                                            ->produto
-                                            ->nome_produto
-                                    }}
+                                    {{ $item->produto?->nome_produto ?? 'Produto indisponível' }}
                                 </strong>
 
-                                <br>
+                                <div class="small text-muted">
+                                    Cor: {{ $item->cor }}
+                                </div>
 
-                                <small class="text-muted">
-                                    {{
-                                        $item
-                                            ->variacao
-                                            ->tamanho
-                                    }}
+                                <div class="small mt-1">
+                                    <strong>Cliente:</strong>
+                                    {{ $item->cliente_nome ?? 'Sem cliente definido' }}
+                                </div>
 
-                                    /
-
-                                    {{
-                                        $item
-                                            ->variacao
-                                            ->cor
-                                    }}
-                                </small>
+                                <div class="small">
+                                    <strong>Costura:</strong>
+                                    {{ $item->responsavel_costura ?: 'Não informado' }}
+                                </div>
                             </td>
 
                             <td class="text-center">
                                 <strong>
-                                    {{
-                                        number_format(
-                                            $item->quantidade,
-                                            0,
-                                            ',',
-                                            '.'
-                                        )
-                                    }}
+                                    {{ number_format($item->quantidade, 0, ',', '.') }} un.
                                 </strong>
 
-                                <span class="text-muted">
-                                    un.
-                                </span>
+                                @foreach($item->variacoes as $linha)
+                                    <div class="small text-muted text-nowrap">
+                                        {{ $linha->variacao?->tamanho ?? 'Tamanho indisponível' }}:
+                                        {{ number_format($linha->quantidade, 0, ',', '.') }}
+                                    </div>
+                                @endforeach
                             </td>
 
                             <td>
@@ -796,22 +799,6 @@
 
                                     @endif
 
-                                    @if(
-                                        $item
-                                            ->responsavel_costura
-                                    )
-                                        <div class="small mb-1">
-                                            <strong>
-                                                Costura:
-                                            </strong>
-
-                                            {{
-                                                $item
-                                                    ->responsavel_costura
-                                            }}
-                                        </div>
-                                    @endif
-
                                     @if($item->observacao)
                                         <div
                                             class="small text-muted"
@@ -879,8 +866,8 @@
                                         }}"
                                         method="POST"
                                         class="d-inline"
-                                        data-confirm="Deseja remover este item da ordem? Como a produção ainda não foi iniciada, nenhuma movimentação de estoque será realizada."
-                                        data-confirm-title="Remover item"
+                                        data-confirm="Deseja remover este lote da ordem? Como a produção ainda não foi iniciada, nenhuma movimentação de estoque será realizada."
+                                        data-confirm-title="Remover lote"
                                         data-confirm-button="Remover"
                                         data-confirm-variant="danger"
                                     >
@@ -924,8 +911,8 @@
 
                                             $mensagemReversao =
                                                 $revertendoConclusao
-                                                    ? 'Este item será revertido para Finalização. As unidades adicionadas ao estoque de produtos acabados serão retiradas novamente, e a correção ficará registrada no histórico. Deseja continuar?'
-                                                    : 'Este item será revertido para '
+                                                    ? 'Este lote será revertido para Finalização. As unidades adicionadas ao estoque de produtos acabados serão retiradas novamente, e a correção ficará registrada no histórico. Deseja continuar?'
+                                                    : 'Este lote será revertido para '
                                                         . $nomesEtapas[
                                                             $etapaAnterior
                                                         ]
@@ -1003,7 +990,7 @@
                                                 $ehFechamentoDefinitivo
                                             ) {
                                                 $mensagemConfirmacao =
-                                                    'Este é o último item pendente. Ao concluí-lo, o estoque do produto acabado será atualizado e a ordem será encerrada definitivamente. Depois disso, não será possível reverter etapas, editar ou cancelar esta ordem. Deseja continuar?';
+                                                    'Este é o último lote pendente. Ao concluí-lo, o estoque do produto acabado será atualizado e a ordem será encerrada definitivamente. Depois disso, não será possível reverter etapas, editar ou cancelar esta ordem. Deseja continuar?';
 
                                                 $tituloConfirmacao =
                                                     'Concluir e encerrar ordem';
@@ -1018,20 +1005,20 @@
                                                 $concluindoItem
                                             ) {
                                                 $mensagemConfirmacao =
-                                                    'Deseja concluir este item? A quantidade produzida será adicionada ao estoque de produtos acabados. A ordem continuará em produção enquanto houver outros itens pendentes.';
+                                                    'Deseja concluir este lote? A quantidade produzida será adicionada ao estoque de produtos acabados. A ordem continuará em produção enquanto houver outros lotes pendentes.';
 
                                                 $tituloConfirmacao =
-                                                    'Concluir item';
+                                                    'Concluir lote';
 
                                                 $botaoConfirmacao =
-                                                    'Concluir item';
+                                                    'Concluir lote';
 
                                                 $varianteConfirmacao =
                                                     'success';
 
                                             } else {
                                                 $mensagemConfirmacao =
-                                                    'Deseja avançar este item de '
+                                                    'Deseja avançar este lote de '
                                                     . $nomesEtapas[
                                                         $item->etapa_atual
                                                     ]
@@ -1091,7 +1078,7 @@
 
                                                 @elseif($concluindoItem)
 
-                                                    Concluir item
+                                                    Concluir lote
 
                                                 @else
 
@@ -1168,7 +1155,7 @@
                         </th>
 
                         <th>
-                            Item
+                            Lote
                         </th>
 
                         <th>
@@ -1196,6 +1183,8 @@
                                     {{
                                         $historico
                                             ->created_at
+                                            ->copy()
+                                            ->timezone($timezone)
                                             ->format('d/m/Y')
                                     }}
                                 </strong>
@@ -1204,56 +1193,32 @@
                                     {{
                                         $historico
                                             ->created_at
+                                            ->copy()
+                                            ->timezone($timezone)
                                             ->format('H:i:s')
                                     }}
                                 </small>
                             </td>
 
                             <td>
-                                @if(
-                                    $historico->item
-                                    &&
-                                    $historico
-                                        ->item
-                                        ->variacao
-                                )
+                                @if($historico->item)
                                     <strong>
-                                        {{
-                                            $historico
-                                                ->item
-                                                ->variacao
-                                                ->produto
-                                                ?->nome_produto
-                                            ?? 'Produto indisponível'
-                                        }}
+                                        {{ $historico->item->produto?->nome_produto ?? 'Produto indisponível' }}
                                     </strong>
 
-                                    <br>
+                                    <div class="small text-muted">
+                                        Cor: {{ $historico->item->cor }}
+                                        · {{ $historico->item->quantidade }} un.
+                                    </div>
 
-                                    <small class="text-muted">
-                                        {{
-                                            $historico
-                                                ->item
-                                                ->variacao
-                                                ->tamanho
-                                        }}
-
-                                        /
-
-                                        {{
-                                            $historico
-                                                ->item
-                                                ->variacao
-                                                ->cor
-                                        }}
-                                    </small>
-
+                                    <div class="small text-muted">
+                                        @foreach($historico->item->variacoes as $linha)
+                                            {{ $linha->variacao?->tamanho ?? 'Tamanho indisponível' }}:
+                                            {{ $linha->quantidade }}{{ !$loop->last ? ' · ' : '' }}
+                                        @endforeach
+                                    </div>
                                 @else
-
-                                    <span class="text-muted">
-                                        Item não disponível
-                                    </span>
-
+                                    <span class="text-muted">Lote não disponível</span>
                                 @endif
                             </td>
 
@@ -1519,7 +1484,7 @@
                     ? 'Excluir indisponível — Somente ordens planejadas podem ser excluídas.'
                     : (
                         $ordem->itens->isNotEmpty()
-                            ? 'Excluir indisponível — Remova todos os itens antes de excluir esta ordem.'
+                            ? 'Excluir indisponível — Remova todos os lotes antes de excluir esta ordem.'
                             : 'Excluir indisponível — Esta ordem possui histórico de produção e deve ser preservada.'
                     )
             }}"
@@ -1556,7 +1521,7 @@
             <span
                 class="d-inline-block"
                 tabindex="0"
-                title="Cancelar indisponível — Reverta primeiro todos os itens concluídos para Finalização antes de cancelar esta ordem."
+                title="Cancelar indisponível — Reverta primeiro todos os lotes concluídos para Finalização antes de cancelar esta ordem."
             >
                 <button
                     type="button"

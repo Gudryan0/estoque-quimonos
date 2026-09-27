@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OrdemProducaoItem;
+use App\Models\OrdemProducaoItemVariacao;
 use App\Models\Produto;
 use App\Models\ProdutoVariacao;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProdutoVariacaoController extends Controller
 {
@@ -176,7 +177,7 @@ class ProdutoVariacaoController extends Controller
 
         if ($idsVariacoes->isNotEmpty()) {
             $variacoesUtilizadasEmProducao =
-                OrdemProducaoItem::query()
+                OrdemProducaoItemVariacao::query()
                     ->whereIn(
                         'id_variacao',
                         $idsVariacoes
@@ -196,8 +197,14 @@ class ProdutoVariacaoController extends Controller
 
             $variacoesComOrdemAtiva =
                 DB::table(
-                    'ordem_producao_itens as item'
+                    'ordem_producao_item_variacoes as linha'
                 )
+                    ->join(
+                        'ordem_producao_itens as item',
+                        'item.id_item',
+                        '=',
+                        'linha.id_item'
+                    )
                     ->join(
                         'ordens_producao as ordem',
                         'ordem.id_ordem',
@@ -205,7 +212,7 @@ class ProdutoVariacaoController extends Controller
                         'item.id_ordem'
                     )
                     ->whereIn(
-                        'item.id_variacao',
+                        'linha.id_variacao',
                         $idsVariacoes
                     )
                     ->whereIn(
@@ -217,7 +224,7 @@ class ProdutoVariacaoController extends Controller
                     )
                     ->distinct()
                     ->pluck(
-                        'item.id_variacao'
+                        'linha.id_variacao'
                     )
                     ->mapWithKeys(
                         function ($idVariacao) {
@@ -389,6 +396,29 @@ class ProdutoVariacaoController extends Controller
             $produto,
             $variacao
         );
+
+        /*
+         * Uma variação já utilizada em produção não deve
+         * mudar de tamanho/cor: lotes e movimentações
+         * históricas dependem dessa identificação.
+         * Alterar apenas o estoque mínimo continua permitido.
+         */
+        $identidadeAlterada =
+            $dados['tamanho'] !== $variacao->tamanho
+            || $dados['cor'] !== $variacao->cor;
+
+        if (
+            $identidadeAlterada
+            && OrdemProducaoItemVariacao::where(
+                'id_variacao',
+                $variacao->id_variacao
+            )->exists()
+        ) {
+            throw ValidationException::withMessages([
+                'tamanho' =>
+                    'Não é possível alterar tamanho ou cor de uma variação utilizada em produção. Ajuste apenas o estoque mínimo ou cadastre uma nova variação.',
+            ]);
+        }
 
         $variacao->update(
             $dados
@@ -739,7 +769,7 @@ class ProdutoVariacaoController extends Controller
         }
 
         $utilizadaEmProducao =
-            OrdemProducaoItem::where(
+            OrdemProducaoItemVariacao::where(
                 'id_variacao',
                 $variacao->id_variacao
             )->exists();
@@ -791,8 +821,14 @@ class ProdutoVariacaoController extends Controller
         ProdutoVariacao $variacao
     ): bool {
         return DB::table(
-            'ordem_producao_itens as item'
+            'ordem_producao_item_variacoes as linha'
         )
+            ->join(
+                'ordem_producao_itens as item',
+                'item.id_item',
+                '=',
+                'linha.id_item'
+            )
             ->join(
                 'ordens_producao as ordem',
                 'ordem.id_ordem',
@@ -800,7 +836,7 @@ class ProdutoVariacaoController extends Controller
                 'item.id_ordem'
             )
             ->where(
-                'item.id_variacao',
+                'linha.id_variacao',
                 $variacao->id_variacao
             )
             ->whereIn(
@@ -825,14 +861,8 @@ class ProdutoVariacaoController extends Controller
                 '=',
                 'item.id_ordem'
             )
-            ->join(
-                'produto_variacoes as variacao',
-                'variacao.id_variacao',
-                '=',
-                'item.id_variacao'
-            )
             ->where(
-                'variacao.id_produto',
+                'item.id_produto',
                 $produto->id_produto
             )
             ->whereIn(

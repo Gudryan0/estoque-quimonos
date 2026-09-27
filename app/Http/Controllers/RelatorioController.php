@@ -29,11 +29,34 @@ class RelatorioController extends Controller
             $periodo = 30;
         }
 
-        $inicio = now()
-            ->subDays($periodo - 1)
-            ->startOfDay();
+        $timezone =
+            config(
+                'app.business_timezone',
+                'America/Sao_Paulo'
+            );
 
-        $fim = now()->endOfDay();
+        $hoje =
+            now($timezone)
+                ->toDateString();
+
+        $inicio =
+            now($timezone)
+                ->subDays($periodo - 1)
+                ->startOfDay();
+
+        $fim =
+            now($timezone)
+                ->endOfDay();
+
+        $inicioUtc =
+            $inicio
+                ->copy()
+                ->utc();
+
+        $fimUtc =
+            $fim
+                ->copy()
+                ->utc();
 
         /*
         |--------------------------------------------------------------------------
@@ -46,8 +69,8 @@ class RelatorioController extends Controller
                 ->whereBetween(
                     'data_movimentacao',
                     [
-                        $inicio,
-                        $fim,
+                        $inicioUtc,
+                        $fimUtc,
                     ]
                 );
 
@@ -126,8 +149,8 @@ class RelatorioController extends Controller
                 ->whereBetween(
                     'movimentacoes.data_movimentacao',
                     [
-                        $inicio,
-                        $fim,
+                        $inicioUtc,
+                        $fimUtc,
                     ]
                 )
                 ->select(
@@ -190,8 +213,8 @@ class RelatorioController extends Controller
                 ->whereBetween(
                     'data_movimentacao',
                     [
-                        $inicio,
-                        $fim,
+                        $inicioUtc,
+                        $fimUtc,
                     ]
                 )
                 ->groupBy(
@@ -378,8 +401,8 @@ class RelatorioController extends Controller
                 ->whereBetween(
                     'movimentacoes.data_movimentacao',
                     [
-                        $inicio,
-                        $fim,
+                        $inicioUtc,
+                        $fimUtc,
                     ]
                 )
                 ->select(
@@ -428,8 +451,8 @@ class RelatorioController extends Controller
                 ->whereBetween(
                     'movimentacoes.data_movimentacao',
                     [
-                        $inicio,
-                        $fim,
+                        $inicioUtc,
+                        $fimUtc,
                     ]
                 )
                 ->select(
@@ -483,8 +506,8 @@ class RelatorioController extends Controller
             OrdemProducao::whereBetween(
                 'created_at',
                 [
-                    $inicio,
-                    $fim,
+                    $inicioUtc,
+                    $fimUtc,
                 ]
             )->count();
 
@@ -500,8 +523,8 @@ class RelatorioController extends Controller
                 ->whereBetween(
                     'updated_at',
                     [
-                        $inicio,
-                        $fim,
+                        $inicioUtc,
+                        $fimUtc,
                     ]
                 )
                 ->count();
@@ -531,8 +554,8 @@ class RelatorioController extends Controller
                 ->whereBetween(
                     'created_at',
                     [
-                        $inicio,
-                        $fim,
+                        $inicioUtc,
+                        $fimUtc,
                     ]
                 )
                 ->distinct()
@@ -583,7 +606,7 @@ class RelatorioController extends Controller
                 ->whereDate(
                     'data_prevista',
                     '<',
-                    today()
+                    $hoje
                 )
                 ->count();
 
@@ -724,7 +747,7 @@ class RelatorioController extends Controller
                 ->where(
                     'created_at',
                     '<=',
-                    $fim
+                    $fimUtc
                 )
                 ->orderBy(
                     'id_item'
@@ -780,11 +803,11 @@ class RelatorioController extends Controller
                     $transicaoDentroPeriodo =
                         $historico
                             ->created_at
-                            ->gte($inicio)
+                            ->gte($inicioUtc)
                         &&
                         $historico
                             ->created_at
-                            ->lte($fim);
+                            ->lte($fimUtc);
 
                     $sequenciaValida =
                         $anterior
@@ -920,8 +943,8 @@ class RelatorioController extends Controller
                 ->whereBetween(
                     'updated_at',
                     [
-                        $inicio,
-                        $fim,
+                        $inicioUtc,
+                        $fimUtc,
                     ]
                 )
                 ->pluck(

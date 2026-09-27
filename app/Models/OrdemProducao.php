@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'codigo',
-    'id_cliente',
-    'cliente_nome',
     'id_usuario_criador',
     'status',
     'data_prevista',
@@ -31,15 +29,6 @@ class OrdemProducao extends Model
             'data_prevista' => 'date',
             'cancelada_em' => 'datetime',
         ];
-    }
-
-    public function cliente(): BelongsTo
-    {
-        return $this->belongsTo(
-            Cliente::class,
-            'id_cliente',
-            'id_cliente'
-        );
     }
 
     public function criador(): BelongsTo

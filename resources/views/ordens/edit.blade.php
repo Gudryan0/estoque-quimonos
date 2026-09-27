@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('title', 'Editar Ordem de Produção')
@@ -58,68 +59,6 @@
                 >
                     @csrf
                     @method('PUT')
-
-                    <div class="mb-4">
-                        <label
-                            for="id_cliente"
-                            class="form-label"
-                        >
-                            Cliente
-                        </label>
-
-                        <select
-                            name="id_cliente"
-                            id="id_cliente"
-                            class="
-                                form-select
-
-                                @error('id_cliente')
-                                    is-invalid
-                                @enderror
-                            "
-                        >
-                            <option value="">
-                                Sem cliente definido
-                            </option>
-
-                            @foreach(
-                                $clientes
-                                as $cliente
-                            )
-                                <option
-                                    value="{{
-                                        $cliente
-                                            ->id_cliente
-                                    }}"
-                                    @selected(
-                                        old(
-                                            'id_cliente',
-                                            $ordem
-                                                ->id_cliente
-                                        )
-                                        ==
-                                        $cliente
-                                            ->id_cliente
-                                    )
-                                >
-                                    {{
-                                        $cliente
-                                            ->nome_cliente
-                                    }}
-                                </option>
-                            @endforeach
-                        </select>
-
-                        @error('id_cliente')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                        @enderror
-
-                        <div class="form-text">
-                            Campo opcional.
-                        </div>
-                    </div>
 
                     <div class="mb-4">
                         <label
@@ -188,7 +127,7 @@
                             "
                             rows="4"
                             maxlength="2000"
-                            placeholder="Informações adicionais sobre esta ordem"
+                            placeholder="Informações gerais sobre esta ordem"
                         >{{
                             old(
                                 'observacao',
@@ -217,10 +156,13 @@
                             mb-4
                         "
                     >
-                        Depois que a produção for iniciada,
-                        cliente, previsão e observações
-                        cadastrais desta ordem não poderão
-                        mais ser alterados.
+                        Estas informações só podem ser
+                        alteradas enquanto a ordem estiver
+                        <strong>planejada</strong>.
+
+                        Os clientes e as especificações
+                        de produção são definidos
+                        individualmente nos lotes.
                     </div>
 
                     <div class="d-flex flex-wrap gap-2">

@@ -353,7 +353,7 @@
 
         @if($topProdutos->isEmpty())
 
-            <div class="card h-100">
+            <div class="card">
                 <div class="card-body text-muted">
                     Não há saídas de produtos
                     neste período.
@@ -657,7 +657,7 @@
         <div class="card h-100">
             <div class="card-body p-4">
                 <div class="text-muted mb-2">
-                    Itens concluídos
+                    Lotes concluídos
                 </div>
 
                 <h2 class="mb-1">
@@ -778,7 +778,7 @@
                             </th>
 
                             <th class="text-end">
-                                Itens
+                                Lotes
                             </th>
 
                             <th class="text-end">
@@ -946,8 +946,8 @@
                             $maiorFilaAtual[
                                 'itens'
                             ] === 1
-                                ? 'item'
-                                : 'itens'
+                                ? 'lote'
+                                : 'lotes'
                         }}
 
                         de produção.

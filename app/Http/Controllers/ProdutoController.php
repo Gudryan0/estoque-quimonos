@@ -130,12 +130,6 @@ class ProdutoController extends Controller
                     '=',
                     'item.id_ordem'
                 )
-                ->join(
-                    'produto_variacoes as variacao',
-                    'variacao.id_variacao',
-                    '=',
-                    'item.id_variacao'
-                )
                 ->whereIn(
                     'ordem.status',
                     [
@@ -145,7 +139,7 @@ class ProdutoController extends Controller
                 )
                 ->distinct()
                 ->pluck(
-                    'variacao.id_produto'
+                    'item.id_produto'
                 )
                 ->mapWithKeys(
                     function ($idProduto) {
@@ -403,14 +397,8 @@ class ProdutoController extends Controller
                 '=',
                 'item.id_ordem'
             )
-            ->join(
-                'produto_variacoes as variacao',
-                'variacao.id_variacao',
-                '=',
-                'item.id_variacao'
-            )
             ->where(
-                'variacao.id_produto',
+                'item.id_produto',
                 $produto->id_produto
             )
             ->whereIn(

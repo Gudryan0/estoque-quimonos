@@ -5,6 +5,14 @@
 @section('content')
 
 @php
+    $hoje =
+        now(
+            config(
+                'app.business_timezone',
+                'America/Sao_Paulo'
+            )
+        )->toDateString();
+
     $statusConfig = [
         'planejada' => [
             'texto' => 'Planejada',
@@ -350,7 +358,7 @@
                         </th>
 
                         <th>
-                            Cliente
+                            Clientes
                         </th>
 
                         <th>
@@ -358,7 +366,7 @@
                         </th>
 
                         <th class="text-center">
-                            Itens
+                            Lotes
                         </th>
 
                         <th>
@@ -404,7 +412,8 @@
                                 &&
                                 $ordem
                                     ->data_prevista
-                                    ->lt(today());
+                                    ->format('Y-m-d')
+                                    < $hoje;
                         @endphp
 
                         <tr>
@@ -426,15 +435,18 @@
                             </td>
 
                             <td>
-                                @if($ordem->cliente_nome)
-                                    {{
-                                        $ordem
-                                            ->cliente_nome
-                                    }}
+                                @php
+                                    $clientesDaOrdem = $ordem->itens
+                                        ->pluck('cliente_nome')
+                                        ->filter()
+                                        ->unique()
+                                        ->values();
+                                @endphp
+
+                                @if($clientesDaOrdem->isNotEmpty())
+                                    {{ $clientesDaOrdem->implode(', ') }}
                                 @else
-                                    <span class="text-muted">
-                                        Sem cliente
-                                    </span>
+                                    <span class="text-muted">Sem cliente</span>
                                 @endif
                             </td>
 

@@ -41,15 +41,22 @@
 
                     <div class="col-sm-6 col-lg-3">
                         <div class="small text-muted mb-1">
-                            Cliente
+                            Clientes atendidos
                         </div>
 
-                        <strong>
-                            {{
-                                $ordem->cliente_nome
-                                ?? 'Sem cliente definido'
-                            }}
-                        </strong>
+                        @php
+                            $clientesDaOrdem = $ordem->itens
+                                ->pluck('cliente_nome')
+                                ->filter()
+                                ->unique()
+                                ->values();
+                        @endphp
+
+                        @if($clientesDaOrdem->isNotEmpty())
+                            <strong>{{ $clientesDaOrdem->implode(', ') }}</strong>
+                        @else
+                            <span class="text-muted">Sem cliente definido</span>
+                        @endif
                     </div>
 
                     <div class="col-sm-6 col-lg-3">
@@ -86,7 +93,7 @@
 
                     <div class="col-sm-6 col-lg-3">
                         <div class="small text-muted mb-1">
-                            Itens
+                            Lotes
                         </div>
 
                         <strong>
@@ -94,8 +101,8 @@
 
                             {{
                                 $ordem->itens_count === 1
-                                    ? 'item'
-                                    : 'itens'
+                                    ? 'lote'
+                                    : 'lotes'
                             }}
                         </strong>
                     </div>

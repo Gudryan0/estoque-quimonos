@@ -182,7 +182,7 @@ class CancelamentoIntegridadeTest extends TestCase
         );
     }
 
-    public function test_ordem_com_item_concluido_nao_pode_ser_cancelada(): void
+    public function test_ordem_com_lote_concluido_nao_pode_ser_cancelada(): void
     {
         $idVariacao =
             $this->criarProdutoVariacao();
@@ -220,9 +220,9 @@ class CancelamentoIntegridadeTest extends TestCase
         );
 
         /*
-         * Apenas o primeiro item será concluído.
+         * Apenas o primeiro lote será concluído.
          *
-         * Como ainda existe outro item pendente,
+         * Como ainda existe outro lote pendente,
          * a ordem permanece em_producao.
          */
         for ($i = 0; $i < 4; $i++) {
@@ -308,7 +308,7 @@ class CancelamentoIntegridadeTest extends TestCase
         );
     }
 
-    public function test_ordem_planejada_sem_itens_pode_ser_excluida(): void
+    public function test_ordem_planejada_sem_lotes_pode_ser_excluida(): void
     {
         $idOrdem =
             $this->criarOrdem();
@@ -333,7 +333,7 @@ class CancelamentoIntegridadeTest extends TestCase
         );
     }
 
-    public function test_ordem_planejada_com_item_nao_pode_ser_excluida(): void
+    public function test_ordem_planejada_com_lote_nao_pode_ser_excluida(): void
     {
         $idVariacao =
             $this->criarProdutoVariacao();
@@ -382,7 +382,7 @@ class CancelamentoIntegridadeTest extends TestCase
             DB::table('produtos')
                 ->insertGetId([
                     'nome_produto' =>
-                        'Kimono Teste',
+                        'Kimono Teste ' . uniqid(),
 
                     'categoria' =>
                         'Kimono',
@@ -504,12 +504,6 @@ class CancelamentoIntegridadeTest extends TestCase
                 'OP-TESTE-'
                 . uniqid(),
 
-            'id_cliente' =>
-                null,
-
-            'cliente_nome' =>
-                null,
-
             'id_usuario_criador' =>
                 $this->usuario->id,
 
@@ -546,11 +540,81 @@ class CancelamentoIntegridadeTest extends TestCase
         int $idVariacao,
         int $quantidade
     ): int {
-        return DB::table(
-            'ordem_producao_itens'
-        )->insertGetId([
-            'id_ordem' =>
-                $idOrdem,
+        $variacao =
+            DB::table('produto_variacoes')
+                ->where(
+                    'id_variacao',
+                    $idVariacao
+                )
+                ->first();
+
+        if (!$variacao) {
+            throw new \RuntimeException(
+                'Variação de teste não encontrada.'
+            );
+        }
+
+        $idItem =
+            DB::table(
+                'ordem_producao_itens'
+            )->insertGetId([
+                'id_ordem' =>
+                    $idOrdem,
+
+                'id_produto' =>
+                    $variacao->id_produto,
+
+                'id_cliente' =>
+                    null,
+
+                'cliente_nome' =>
+                    null,
+
+                'cor' =>
+                    $variacao->cor,
+
+                'quantidade' =>
+                    $quantidade,
+
+                'etapa_atual' =>
+                    'corte',
+
+                'descricao_bordado' =>
+                    null,
+
+                'cor_linha' =>
+                    null,
+
+                'etiqueta' =>
+                    null,
+
+                'posicao_etiqueta' =>
+                    null,
+
+                'responsavel_costura' =>
+                    null,
+
+                'observacao' =>
+                    null,
+
+                'materiais_consumidos_at' =>
+                    null,
+
+                'produto_estoque_adicionado_at' =>
+                    null,
+
+                'created_at' =>
+                    now(),
+
+                'updated_at' =>
+                    now(),
+            ]);
+
+        DB::table(
+            'ordem_producao_item_variacoes'
+        )->insert([
+            'id_item' =>
+                $idItem,
 
             'id_variacao' =>
                 $idVariacao,
@@ -558,38 +622,13 @@ class CancelamentoIntegridadeTest extends TestCase
             'quantidade' =>
                 $quantidade,
 
-            'etapa_atual' =>
-                'corte',
-
-            'descricao_bordado' =>
-                null,
-
-            'cor_linha' =>
-                null,
-
-            'etiqueta' =>
-                null,
-
-            'posicao_etiqueta' =>
-                null,
-
-            'responsavel_costura' =>
-                null,
-
-            'observacao' =>
-                null,
-
-            'materiais_consumidos_at' =>
-                null,
-
-            'produto_estoque_adicionado_at' =>
-                null,
-
             'created_at' =>
                 now(),
 
             'updated_at' =>
                 now(),
         ]);
+
+        return $idItem;
     }
 }

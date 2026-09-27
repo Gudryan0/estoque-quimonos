@@ -32,7 +32,6 @@ class FluxoProducaoController extends Controller
     ) {
         $resultado = DB::transaction(
             function () use ($ordem) {
-
                 $ordemBloqueada =
                     OrdemProducao::query()
                         ->lockForUpdate()
@@ -50,41 +49,37 @@ class FluxoProducaoController extends Controller
                     ];
                 }
 
-                $itens =
+                $lotes =
                     OrdemProducaoItem::query()
                         ->where(
                             'id_ordem',
-                            $ordemBloqueada
-                                ->id_ordem
+                            $ordemBloqueada->id_ordem
                         )
+                        ->orderBy('id_item')
                         ->lockForUpdate()
                         ->get();
 
-                if ($itens->isEmpty()) {
+                if ($lotes->isEmpty()) {
                     return [
                         'erro' =>
-                            'Adicione pelo menos um item antes de iniciar a produção.',
+                            'Adicione pelo menos um lote antes de iniciar a produção.',
                     ];
                 }
 
                 /*
-                 * consumirMateriais() também funciona como
-                 * última validação de integridade.
-                 *
-                 * Nenhum estoque é alterado antes de todos
-                 * os produtos, variações, materiais e
-                 * quantidades serem conferidos.
+                 * Valida todos os lotes e todas as
+                 * necessidades de materiais antes
+                 * de realizar qualquer baixa.
                  */
                 $erroConsumo =
                     $this->consumirMateriais(
                         $ordemBloqueada,
-                        $itens
+                        $lotes
                     );
 
                 if ($erroConsumo !== null) {
                     return [
-                        'erro' =>
-                            $erroConsumo,
+                        'erro' => $erroConsumo,
                     ];
                 }
 
@@ -93,14 +88,13 @@ class FluxoProducaoController extends Controller
 
                 $ordemBloqueada->save();
 
-                foreach ($itens as $item) {
+                foreach ($lotes as $lote) {
                     OrdemProducaoHistorico::create([
                         'id_ordem' =>
-                            $ordemBloqueada
-                                ->id_ordem,
+                            $ordemBloqueada->id_ordem,
 
                         'id_item' =>
-                            $item->id_item,
+                            $lote->id_item,
 
                         'id_usuario' =>
                             auth()->id(),
@@ -115,7 +109,7 @@ class FluxoProducaoController extends Controller
                             'corte',
 
                         'observacao' =>
-                            'Item iniciado na produção. Materiais baixados automaticamente do estoque.',
+                            'Lote iniciado na produção. Materiais baixados automaticamente do estoque.',
                     ]);
                 }
 
@@ -125,12 +119,9 @@ class FluxoProducaoController extends Controller
             }
         );
 
-        if ($resultado['erro']) {
+        if ($resultado['erro'] !== null) {
             return redirect()
-                ->route(
-                    'ordens.show',
-                    $ordem
-                )
+                ->route('ordens.show', $ordem)
                 ->with(
                     'erro',
                     $resultado['erro']
@@ -138,10 +129,7 @@ class FluxoProducaoController extends Controller
         }
 
         return redirect()
-            ->route(
-                'ordens.show',
-                $ordem
-            )
+            ->route('ordens.show', $ordem)
             ->with(
                 'sucesso',
                 'Produção iniciada e materiais baixados do estoque com sucesso.'
@@ -153,11 +141,7 @@ class FluxoProducaoController extends Controller
         OrdemProducaoItem $item
     ) {
         $resultado = DB::transaction(
-            function () use (
-                $ordem,
-                $item
-            ) {
-
+            function () use ($ordem, $item) {
                 $ordemBloqueada =
                     OrdemProducao::query()
                         ->lockForUpdate()
@@ -165,7 +149,7 @@ class FluxoProducaoController extends Controller
                             $ordem->id_ordem
                         );
 
-                $itemBloqueado =
+                $lote =
                     OrdemProducaoItem::query()
                         ->lockForUpdate()
                         ->findOrFail(
@@ -173,9 +157,9 @@ class FluxoProducaoController extends Controller
                         );
 
                 abort_unless(
-                    $itemBloqueado->id_ordem
+                    (int) $lote->id_ordem
                         ===
-                    $ordemBloqueada->id_ordem,
+                    (int) $ordemBloqueada->id_ordem,
                     404
                 );
 
@@ -189,9 +173,7 @@ class FluxoProducaoController extends Controller
                     ];
                 }
 
-                $etapaAtual =
-                    $itemBloqueado
-                        ->etapa_atual;
+                $etapaAtual = $lote->etapa_atual;
 
                 if (
                     !array_key_exists(
@@ -201,47 +183,50 @@ class FluxoProducaoController extends Controller
                 ) {
                     return [
                         'erro' =>
-                            'Este item já foi concluído.',
+                            'Este lote já foi concluído.',
                     ];
                 }
 
                 $proximaEtapa =
-                    self::TRANSICOES[
-                        $etapaAtual
-                    ];
+                    self::TRANSICOES[$etapaAtual];
 
-                if (
-                    $proximaEtapa
-                    === 'concluido'
-                ) {
-                    $this
-                        ->adicionarProdutoConcluidoAoEstoque(
-                            $ordemBloqueada,
-                            $itemBloqueado
-                        );
+                if ($proximaEtapa === 'concluido') {
+                    $erroEstoque =
+                        $this
+                            ->adicionarProdutoConcluidoAoEstoque(
+                                $ordemBloqueada,
+                                $lote
+                            );
+
+                    if ($erroEstoque !== null) {
+                        return [
+                            'erro' => $erroEstoque,
+                        ];
+                    }
                 }
 
-                $itemBloqueado
-                    ->etapa_atual =
+                /*
+                 * A etapa pertence ao lote inteiro.
+                 * Seus tamanhos não possuem etapas
+                 * independentes.
+                 */
+                $lote->etapa_atual =
                     $proximaEtapa;
 
-                $itemBloqueado->save();
+                $lote->save();
 
                 OrdemProducaoHistorico::create([
                     'id_ordem' =>
-                        $ordemBloqueada
-                            ->id_ordem,
+                        $ordemBloqueada->id_ordem,
 
                     'id_item' =>
-                        $itemBloqueado
-                            ->id_item,
+                        $lote->id_item,
 
                     'id_usuario' =>
                         auth()->id(),
 
                     'acao' =>
-                        $proximaEtapa
-                        === 'concluido'
+                        $proximaEtapa === 'concluido'
                             ? 'conclusao'
                             : 'avanco',
 
@@ -252,24 +237,19 @@ class FluxoProducaoController extends Controller
                         $proximaEtapa,
 
                     'observacao' =>
-                        $proximaEtapa
-                        === 'concluido'
-                            ? 'Produto acabado adicionado automaticamente ao estoque.'
+                        $proximaEtapa === 'concluido'
+                            ? 'Todas as variações do lote foram adicionadas automaticamente ao estoque.'
                             : null,
                 ]);
 
                 $ordemConcluida = false;
 
-                if (
-                    $proximaEtapa
-                    === 'concluido'
-                ) {
+                if ($proximaEtapa === 'concluido') {
                     $possuiPendentes =
                         OrdemProducaoItem::query()
                             ->where(
                                 'id_ordem',
-                                $ordemBloqueada
-                                    ->id_ordem
+                                $ordemBloqueada->id_ordem
                             )
                             ->where(
                                 'etapa_atual',
@@ -279,15 +259,12 @@ class FluxoProducaoController extends Controller
                             ->exists();
 
                     if (!$possuiPendentes) {
-                        $ordemBloqueada
-                            ->status =
+                        $ordemBloqueada->status =
                             'concluida';
 
-                        $ordemBloqueada
-                            ->save();
+                        $ordemBloqueada->save();
 
-                        $ordemConcluida =
-                            true;
+                        $ordemConcluida = true;
                     }
                 }
 
@@ -300,42 +277,29 @@ class FluxoProducaoController extends Controller
             }
         );
 
-        if ($resultado['erro']) {
+        if ($resultado['erro'] !== null) {
             return redirect()
-                ->route(
-                    'ordens.show',
-                    $ordem
-                )
+                ->route('ordens.show', $ordem)
                 ->with(
                     'erro',
                     $resultado['erro']
                 );
         }
 
-        if (
-            $resultado[
-                'ordem_concluida'
-            ]
-        ) {
+        if ($resultado['ordem_concluida']) {
             return redirect()
-                ->route(
-                    'ordens.show',
-                    $ordem
-                )
+                ->route('ordens.show', $ordem)
                 ->with(
                     'sucesso',
-                    'Último item concluído. A ordem foi encerrada definitivamente e os produtos acabados foram atualizados no estoque.'
+                    'Último lote concluído. A ordem foi encerrada definitivamente e os produtos acabados foram atualizados no estoque.'
                 );
         }
 
         return redirect()
-            ->route(
-                'ordens.show',
-                $ordem
-            )
+            ->route('ordens.show', $ordem)
             ->with(
                 'sucesso',
-                'Etapa do item atualizada com sucesso.'
+                'Etapa do lote atualizada com sucesso.'
             );
     }
 
@@ -344,11 +308,7 @@ class FluxoProducaoController extends Controller
         OrdemProducaoItem $item
     ) {
         $resultado = DB::transaction(
-            function () use (
-                $ordem,
-                $item
-            ) {
-
+            function () use ($ordem, $item) {
                 $ordemBloqueada =
                     OrdemProducao::query()
                         ->lockForUpdate()
@@ -356,7 +316,7 @@ class FluxoProducaoController extends Controller
                             $ordem->id_ordem
                         );
 
-                $itemBloqueado =
+                $lote =
                     OrdemProducaoItem::query()
                         ->lockForUpdate()
                         ->findOrFail(
@@ -364,9 +324,9 @@ class FluxoProducaoController extends Controller
                         );
 
                 abort_unless(
-                    $itemBloqueado->id_ordem
+                    (int) $lote->id_ordem
                         ===
-                    $ordemBloqueada->id_ordem,
+                    (int) $ordemBloqueada->id_ordem,
                     404
                 );
 
@@ -390,9 +350,7 @@ class FluxoProducaoController extends Controller
                     ];
                 }
 
-                $etapaAtual =
-                    $itemBloqueado
-                        ->etapa_atual;
+                $etapaAtual = $lote->etapa_atual;
 
                 if (
                     !array_key_exists(
@@ -402,51 +360,39 @@ class FluxoProducaoController extends Controller
                 ) {
                     return [
                         'erro' =>
-                            'O item já está na primeira etapa da produção.',
+                            'O lote já está na primeira etapa da produção.',
                     ];
                 }
 
                 $etapaAnterior =
-                    self::REVERSOES[
-                        $etapaAtual
-                    ];
+                    self::REVERSOES[$etapaAtual];
 
-                if (
-                    $etapaAtual
-                    === 'concluido'
-                ) {
+                if ($etapaAtual === 'concluido') {
                     $erroEstoque =
                         $this
                             ->removerProdutoConcluidoDoEstoque(
                                 $ordemBloqueada,
-                                $itemBloqueado
+                                $lote
                             );
 
-                    if (
-                        $erroEstoque
-                        !== null
-                    ) {
+                    if ($erroEstoque !== null) {
                         return [
-                            'erro' =>
-                                $erroEstoque,
+                            'erro' => $erroEstoque,
                         ];
                     }
                 }
 
-                $itemBloqueado
-                    ->etapa_atual =
+                $lote->etapa_atual =
                     $etapaAnterior;
 
-                $itemBloqueado->save();
+                $lote->save();
 
                 OrdemProducaoHistorico::create([
                     'id_ordem' =>
-                        $ordemBloqueada
-                            ->id_ordem,
+                        $ordemBloqueada->id_ordem,
 
                     'id_item' =>
-                        $itemBloqueado
-                            ->id_item,
+                        $lote->id_item,
 
                     'id_usuario' =>
                         auth()->id(),
@@ -461,10 +407,9 @@ class FluxoProducaoController extends Controller
                         $etapaAnterior,
 
                     'observacao' =>
-                        $etapaAtual
-                        === 'concluido'
-                            ? 'Conclusão revertida. Produto acabado retirado automaticamente do estoque.'
-                            : 'Etapa revertida manualmente.',
+                        $etapaAtual === 'concluido'
+                            ? 'Conclusão revertida. Todas as variações do lote foram retiradas do estoque de produtos acabados.'
+                            : 'Etapa do lote revertida manualmente.',
                 ]);
 
                 return [
@@ -473,12 +418,9 @@ class FluxoProducaoController extends Controller
             }
         );
 
-        if ($resultado['erro']) {
+        if ($resultado['erro'] !== null) {
             return redirect()
-                ->route(
-                    'ordens.show',
-                    $ordem
-                )
+                ->route('ordens.show', $ordem)
                 ->with(
                     'erro',
                     $resultado['erro']
@@ -486,19 +428,165 @@ class FluxoProducaoController extends Controller
         }
 
         return redirect()
-            ->route(
-                'ordens.show',
-                $ordem
-            )
+            ->route('ordens.show', $ordem)
             ->with(
                 'sucesso',
-                'Etapa revertida com sucesso.'
+                'Etapa do lote revertida com sucesso.'
             );
+    }
+
+    /*
+     * Carrega e valida todas as variações
+     * pertencentes a um lote.
+     *
+     * A validação de atividade é exigida
+     * somente ao iniciar a produção.
+     *
+     * Na conclusão e na reversão, um produto
+     * arquivado não deve impedir a correção
+     * de uma movimentação já realizada.
+     */
+    private function validarVariacoesLote(
+        OrdemProducaoItem $lote,
+        bool $exigirAtivas = false
+    ): array {
+        $linhas =
+            $lote->variacoes()
+                ->orderBy('id_variacao')
+                ->lockForUpdate()
+                ->get();
+
+        if ($linhas->isEmpty()) {
+            return [
+                'erro' =>
+                    'O lote #' . $lote->id_item
+                    . ' não possui tamanhos cadastrados.',
+
+                'linhas' => collect(),
+            ];
+        }
+
+        $resultado = collect();
+        $total = 0;
+
+        foreach ($linhas as $linha) {
+            $relacoes = $exigirAtivas
+                ? [
+                    'produto',
+                    'composicoesMateriais',
+                ]
+                : [
+                    'produto',
+                ];
+
+            $variacao =
+                ProdutoVariacao::query()
+                    ->with($relacoes)
+                    ->lockForUpdate()
+                    ->find($linha->id_variacao);
+
+            if (
+                !$variacao
+                || !$variacao->produto
+            ) {
+                return [
+                    'erro' =>
+                        'Uma das variações do lote #'
+                        . $lote->id_item
+                        . ' não foi encontrada.',
+
+                    'linhas' => collect(),
+                ];
+            }
+
+            if (
+                (int) $variacao->id_produto
+                    !== (int) $lote->id_produto
+                || $variacao->cor !== $lote->cor
+            ) {
+                return [
+                    'erro' =>
+                        'Uma das variações do lote #'
+                        . $lote->id_item
+                        . ' não corresponde ao produto e à cor registrados.',
+
+                    'linhas' => collect(),
+                ];
+            }
+
+            $quantidade = (int) $linha->quantidade;
+
+            if ($quantidade < 1) {
+                return [
+                    'erro' =>
+                        'O lote #'
+                        . $lote->id_item
+                        . ' possui uma quantidade inválida.',
+
+                    'linhas' => collect(),
+                ];
+            }
+
+            if ($exigirAtivas) {
+                if (!$variacao->produto->ativo) {
+                    return [
+                        'erro' =>
+                            'Não é possível iniciar a produção porque o produto '
+                            . $variacao->produto->nome_produto
+                            . ' está inativo.',
+
+                        'linhas' => collect(),
+                    ];
+                }
+
+                if (!$variacao->ativo) {
+                    return [
+                        'erro' =>
+                            'Não é possível iniciar a produção porque a variação '
+                            . $variacao->produto->nome_produto
+                            . ' - '
+                            . $variacao->tamanho
+                            . '/'
+                            . $variacao->cor
+                            . ' está inativa.',
+
+                        'linhas' => collect(),
+                    ];
+                }
+            }
+
+            $total += $quantidade;
+
+            $resultado->push([
+                'variacao' => $variacao,
+                'quantidade' => $quantidade,
+            ]);
+        }
+
+        /*
+         * O total armazenado no lote precisa
+         * corresponder à soma de suas linhas.
+         */
+        if ($total !== (int) $lote->quantidade) {
+            return [
+                'erro' =>
+                    'O total do lote #'
+                    . $lote->id_item
+                    . ' não corresponde à soma das quantidades por tamanho.',
+
+                'linhas' => collect(),
+            ];
+        }
+
+        return [
+            'erro' => null,
+            'linhas' => $resultado,
+        ];
     }
 
     private function consumirMateriais(
         OrdemProducao $ordem,
-        Collection $itens
+        Collection $lotes
     ): ?string {
         $necessidades = [];
         $consumos = [];
@@ -506,187 +594,137 @@ class FluxoProducaoController extends Controller
         /*
          * PRIMEIRA FASE
          *
-         * Verifica cada item e monta a necessidade total.
-         * Nenhum estoque é alterado nesta fase.
+         * Confere todos os lotes e todas
+         * as suas variações.
+         *
+         * Nenhum estoque é alterado aqui.
          */
-        foreach ($itens as $item) {
-
+        foreach ($lotes as $lote) {
             if (
-                $item
-                    ->materiais_consumidos_at
+                $lote->materiais_consumidos_at
                 !== null
             ) {
                 return
-                    'Um dos itens desta ordem já possui consumo de materiais registrado.';
-            }
-
-            /*
-             * A variação é bloqueada durante o início
-             * da produção para evitar alterações
-             * concorrentes enquanto a OP é validada.
-             */
-            $variacao =
-                ProdutoVariacao::with([
-                    'produto',
-                    'composicoesMateriais.material',
-                ])
-                    ->lockForUpdate()
-                    ->findOrFail(
-                        $item->id_variacao
-                    );
-
-            /*
-             * Última barreira para produto e variação.
-             */
-            if (
-                !$variacao->produto
-                ||
-                !$variacao->produto->ativo
-            ) {
-                return
-                    'Não é possível iniciar a produção porque o produto '
-                    . (
-                        $variacao->produto
-                            ? $variacao
-                                ->produto
-                                ->nome_produto
-                            : 'vinculado a um dos itens'
-                    )
-                    . ' está inativo.';
-            }
-
-            if (!$variacao->ativo) {
-                return
-                    'Não é possível iniciar a produção porque a variação '
-                    . $variacao
-                        ->produto
-                        ->nome_produto
-                    . ' - '
-                    . $variacao->tamanho
-                    . '/'
-                    . $variacao->cor
-                    . ' está inativa.';
+                    'Um dos lotes desta ordem já possui consumo de materiais registrado.';
             }
 
             if (
-                $variacao
-                    ->composicoesMateriais
-                    ->isEmpty()
+                $lote->produto_estoque_adicionado_at
+                !== null
             ) {
                 return
-                    'A variação '
-                    . $variacao
-                        ->produto
-                        ->nome_produto
-                    . ' - '
-                    . $variacao
-                        ->tamanho
-                    . '/'
-                    . $variacao
-                        ->cor
-                    . ' não possui ficha de consumo de materiais.';
+                    'Um dos lotes desta ordem já possui entrada de produto acabado registrada.';
+            }
+
+            $dadosLote =
+                $this->validarVariacoesLote(
+                    $lote,
+                    true
+                );
+
+            if ($dadosLote['erro'] !== null) {
+                return $dadosLote['erro'];
             }
 
             foreach (
-                $variacao
-                    ->composicoesMateriais
-                as $composicao
+                $dadosLote['linhas']
+                as $linha
             ) {
-                $quantidade =
-                    round(
-                        (float)
-                        $composicao
+                $variacao = $linha['variacao'];
+                $quantidadePecas = $linha['quantidade'];
+
+                if (
+                    $variacao
+                        ->composicoesMateriais
+                        ->isEmpty()
+                ) {
+                    return
+                        'A variação '
+                        . $variacao->produto->nome_produto
+                        . ' - '
+                        . $variacao->tamanho
+                        . '/'
+                        . $variacao->cor
+                        . ' não possui ficha de consumo de materiais.';
+                }
+
+                foreach (
+                    $variacao->composicoesMateriais
+                    as $composicao
+                ) {
+                    $quantidadeMaterial = round(
+                        (float) $composicao
                             ->quantidade_por_unidade
-                        *
-                        $item->quantidade,
+                        * $quantidadePecas,
                         3
                     );
 
-                if ($quantidade <= 0) {
-                    continue;
+                    if ($quantidadeMaterial <= 0) {
+                        continue;
+                    }
+
+                    $idMaterial =
+                        (int) $composicao->id_material;
+
+                    $necessidades[$idMaterial] =
+                        round(
+                            ($necessidades[$idMaterial] ?? 0)
+                            + $quantidadeMaterial,
+                            3
+                        );
+
+                    $consumos[] = [
+                        'lote' => $lote,
+
+                        'id_material' =>
+                            $idMaterial,
+
+                        'quantidade' =>
+                            $quantidadeMaterial,
+
+                        'descricao' =>
+                            $variacao->produto->nome_produto
+                            . ' '
+                            . $variacao->tamanho
+                            . '/'
+                            . $variacao->cor,
+                    ];
                 }
-
-                if (
-                    !isset(
-                        $necessidades[
-                            $composicao
-                                ->id_material
-                        ]
-                    )
-                ) {
-                    $necessidades[
-                        $composicao
-                            ->id_material
-                    ] = 0;
-                }
-
-                $necessidades[
-                    $composicao
-                        ->id_material
-                ] += $quantidade;
-
-                $consumos[] = [
-                    'item' =>
-                        $item,
-
-                    'id_material' =>
-                        $composicao
-                            ->id_material,
-
-                    'quantidade' =>
-                        $quantidade,
-
-                    'descricao' =>
-                        $variacao
-                            ->produto
-                            ->nome_produto
-                        . ' '
-                        . $variacao
-                            ->tamanho
-                        . '/'
-                        . $variacao
-                            ->cor,
-                ];
             }
         }
 
         /*
          * SEGUNDA FASE
          *
-         * Os materiais são bloqueados e conferidos.
-         * Ainda não houve nenhuma alteração de estoque.
+         * Bloqueia os materiais e verifica
+         * se existe estoque suficiente para
+         * a OP inteira.
+         *
+         * Ainda não há alterações de estoque.
          */
         $materiais =
             Material::query()
                 ->whereIn(
                     'id_material',
-                    array_keys(
-                        $necessidades
-                    )
+                    array_keys($necessidades)
                 )
+                ->orderBy('id_material')
                 ->lockForUpdate()
                 ->get()
-                ->keyBy(
-                    'id_material'
-                );
+                ->keyBy('id_material');
 
         foreach (
             $necessidades
             as $idMaterial => $necessario
         ) {
             $material =
-                $materiais->get(
-                    $idMaterial
-                );
+                $materiais->get($idMaterial);
 
             if (!$material) {
                 return
                     'Um material da ficha de consumo não foi encontrado.';
             }
 
-            /*
-             * Última barreira para materiais inativos.
-             */
             if (!$material->ativo) {
                 return
                     'Não é possível iniciar a produção porque o material '
@@ -695,17 +733,12 @@ class FluxoProducaoController extends Controller
             }
 
             $disponivel =
-                (float)
-                $material->quantidade;
+                (float) $material->quantidade;
 
-            if (
-                $disponivel
-                < $necessario
-            ) {
+            if ($disponivel < $necessario) {
                 return
                     'Estoque insuficiente de '
-                    . $material
-                        ->nome_material
+                    . $material->nome_material
                     . '. Necessário: '
                     . number_format(
                         $necessario,
@@ -714,8 +747,7 @@ class FluxoProducaoController extends Controller
                         '.'
                     )
                     . ' '
-                    . $material
-                        ->unidade_medida
+                    . $material->unidade_medida
                     . '. Disponível: '
                     . number_format(
                         $disponivel,
@@ -724,8 +756,7 @@ class FluxoProducaoController extends Controller
                         '.'
                     )
                     . ' '
-                    . $material
-                        ->unidade_medida
+                    . $material->unidade_medida
                     . '.';
             }
         }
@@ -733,48 +764,43 @@ class FluxoProducaoController extends Controller
         /*
          * TERCEIRA FASE
          *
-         * Somente após TODAS as verificações terem
-         * passado o estoque é realmente alterado.
+         * Todas as verificações passaram.
+         * Efetua a baixa agregada por material.
          */
         foreach (
             $necessidades
             as $idMaterial => $necessario
         ) {
             $material =
-                $materiais->get(
-                    $idMaterial
-                );
+                $materiais->get($idMaterial);
 
-            $material->quantidade =
-                round(
-                    (float)
-                    $material->quantidade
-                    - $necessario,
-                    3
-                );
+            $material->quantidade = round(
+                (float) $material->quantidade
+                - $necessario,
+                3
+            );
 
             $material->save();
         }
 
-        foreach (
-            $consumos
-            as $consumo
-        ) {
+        /*
+         * Cada consumo fica associado ao
+         * lote que o originou.
+         *
+         * A descrição identifica também
+         * a variação correspondente.
+         */
+        foreach ($consumos as $consumo) {
             $material =
                 $materiais->get(
-                    $consumo[
-                        'id_material'
-                    ]
+                    $consumo['id_material']
                 );
 
             Movimentacao::create([
-                'id_variacao' =>
-                    null,
+                'id_variacao' => null,
 
                 'id_material' =>
-                    $consumo[
-                        'id_material'
-                    ],
+                    $consumo['id_material'],
 
                 'id_usuario' =>
                     auth()->id(),
@@ -783,9 +809,7 @@ class FluxoProducaoController extends Controller
                     $ordem->id_ordem,
 
                 'id_item_producao' =>
-                    $consumo[
-                        'item'
-                    ]->id_item,
+                    $consumo['lote']->id_item,
 
                 'tipo_movimentacao' =>
                     'saida',
@@ -794,20 +818,15 @@ class FluxoProducaoController extends Controller
                     'producao_consumo',
 
                 'quantidade' =>
-                    $consumo[
-                        'quantidade'
-                    ],
+                    $consumo['quantidade'],
 
                 'observacao' =>
                     'Consumo automático da '
                     . $ordem->codigo
                     . ' para '
-                    . $consumo[
-                        'descricao'
-                    ]
+                    . $consumo['descricao']
                     . ' - '
-                    . $material
-                        ->nome_material
+                    . $material->nome_material
                     . '.',
 
                 'data_movimentacao' =>
@@ -817,12 +836,11 @@ class FluxoProducaoController extends Controller
 
         $momento = now();
 
-        foreach ($itens as $item) {
-            $item
-                ->materiais_consumidos_at =
+        foreach ($lotes as $lote) {
+            $lote->materiais_consumidos_at =
                 $momento;
 
-            $item->save();
+            $lote->save();
         }
 
         return null;
@@ -830,152 +848,220 @@ class FluxoProducaoController extends Controller
 
     private function adicionarProdutoConcluidoAoEstoque(
         OrdemProducao $ordem,
-        OrdemProducaoItem $item
-    ): void {
+        OrdemProducaoItem $lote
+    ): ?string {
         if (
-            $item
-                ->produto_estoque_adicionado_at
-            !== null
+            $lote->materiais_consumidos_at
+            === null
         ) {
-            return;
+            return
+                'Não é possível concluir um lote sem consumo de materiais registrado.';
         }
 
-        $variacao =
-            ProdutoVariacao::query()
-                ->lockForUpdate()
-                ->findOrFail(
-                    $item->id_variacao
-                );
+        if (
+            $lote->produto_estoque_adicionado_at
+            !== null
+        ) {
+            return
+                'Este lote já possui entrada de produto acabado registrada.';
+        }
 
-        $variacao->quantidade +=
-            $item->quantidade;
+        $dadosLote =
+            $this->validarVariacoesLote($lote);
 
-        $variacao->save();
+        if ($dadosLote['erro'] !== null) {
+            return $dadosLote['erro'];
+        }
 
-        Movimentacao::create([
-            'id_variacao' =>
-                $variacao->id_variacao,
+        /*
+         * Cada tamanho recebe sua própria
+         * entrada no estoque.
+         *
+         * Todas as entradas fazem parte
+         * da mesma transação do avanço.
+         */
+        foreach (
+            $dadosLote['linhas']
+            as $linha
+        ) {
+            $variacao = $linha['variacao'];
+            $quantidade = $linha['quantidade'];
 
-            'id_material' =>
-                null,
+            $variacao->quantidade =
+                (int) $variacao->quantidade
+                + $quantidade;
 
-            'id_usuario' =>
-                auth()->id(),
+            $variacao->save();
 
-            'id_ordem' =>
-                $ordem->id_ordem,
+            Movimentacao::create([
+                'id_variacao' =>
+                    $variacao->id_variacao,
 
-            'id_item_producao' =>
-                $item->id_item,
+                'id_material' =>
+                    null,
 
-            'tipo_movimentacao' =>
-                'entrada',
+                'id_usuario' =>
+                    auth()->id(),
 
-            'origem' =>
-                'producao_conclusao',
+                'id_ordem' =>
+                    $ordem->id_ordem,
 
-            'quantidade' =>
-                $item->quantidade,
+                'id_item_producao' =>
+                    $lote->id_item,
 
-            'observacao' =>
-                'Entrada automática de produto acabado da '
-                . $ordem->codigo
-                . '.',
+                'tipo_movimentacao' =>
+                    'entrada',
 
-            'data_movimentacao' =>
-                now(),
-        ]);
+                'origem' =>
+                    'producao_conclusao',
 
-        $item
-            ->produto_estoque_adicionado_at =
+                'quantidade' =>
+                    $quantidade,
+
+                'observacao' =>
+                    'Entrada automática de produto acabado da '
+                    . $ordem->codigo
+                    . ' - '
+                    . $variacao->produto->nome_produto
+                    . ' '
+                    . $variacao->tamanho
+                    . '/'
+                    . $variacao->cor
+                    . '.',
+
+                'data_movimentacao' =>
+                    now(),
+            ]);
+        }
+
+        /*
+         * O lote é marcado somente depois
+         * que todas as variações foram
+         * adicionadas ao estoque.
+         */
+        $lote->produto_estoque_adicionado_at =
             now();
 
-        $item->save();
+        $lote->save();
+
+        return null;
     }
 
     private function removerProdutoConcluidoDoEstoque(
         OrdemProducao $ordem,
-        OrdemProducaoItem $item
+        OrdemProducaoItem $lote
     ): ?string {
         if (
-            $item
-                ->produto_estoque_adicionado_at
+            $lote->produto_estoque_adicionado_at
             === null
         ) {
-            return null;
-        }
-
-        $variacao =
-            ProdutoVariacao::with(
-                'produto'
-            )
-                ->lockForUpdate()
-                ->findOrFail(
-                    $item->id_variacao
-                );
-
-        if (
-            $variacao->quantidade
-            < $item->quantidade
-        ) {
             return
-                'Não é possível reverter a conclusão porque o estoque atual de '
-                . $variacao
-                    ->produto
-                    ->nome_produto
-                . ' '
-                . $variacao->tamanho
-                . '/'
-                . $variacao->cor
-                . ' é menor que as '
-                . $item->quantidade
-                . ' unidades que seriam retiradas.';
+                'Não há entrada de produto acabado registrada para reverter este lote.';
         }
 
-        $variacao->quantidade -=
-            $item->quantidade;
+        $dadosLote =
+            $this->validarVariacoesLote($lote);
 
-        $variacao->save();
+        if ($dadosLote['erro'] !== null) {
+            return $dadosLote['erro'];
+        }
 
-        Movimentacao::create([
-            'id_variacao' =>
-                $variacao->id_variacao,
+        /*
+         * PRIMEIRA FASE
+         *
+         * Confere o estoque de todas as
+         * variações antes de retirar
+         * qualquer unidade.
+         */
+        foreach (
+            $dadosLote['linhas']
+            as $linha
+        ) {
+            $variacao = $linha['variacao'];
+            $quantidade = $linha['quantidade'];
 
-            'id_material' =>
-                null,
+            if (
+                (int) $variacao->quantidade
+                < $quantidade
+            ) {
+                return
+                    'Não é possível reverter a conclusão porque o estoque atual de '
+                    . $variacao->produto->nome_produto
+                    . ' '
+                    . $variacao->tamanho
+                    . '/'
+                    . $variacao->cor
+                    . ' é menor que as '
+                    . $quantidade
+                    . ' unidades que seriam retiradas.';
+            }
+        }
 
-            'id_usuario' =>
-                auth()->id(),
+        /*
+         * SEGUNDA FASE
+         *
+         * Todas as variações possuem estoque.
+         * Executa as retiradas e registra
+         * as movimentações correspondentes.
+         */
+        foreach (
+            $dadosLote['linhas']
+            as $linha
+        ) {
+            $variacao = $linha['variacao'];
+            $quantidade = $linha['quantidade'];
 
-            'id_ordem' =>
-                $ordem->id_ordem,
+            $variacao->quantidade =
+                (int) $variacao->quantidade
+                - $quantidade;
 
-            'id_item_producao' =>
-                $item->id_item,
+            $variacao->save();
 
-            'tipo_movimentacao' =>
-                'saida',
+            Movimentacao::create([
+                'id_variacao' =>
+                    $variacao->id_variacao,
 
-            'origem' =>
-                'producao_reversao',
+                'id_material' =>
+                    null,
 
-            'quantidade' =>
-                $item->quantidade,
+                'id_usuario' =>
+                    auth()->id(),
 
-            'observacao' =>
-                'Retirada automática devido à reversão da conclusão da '
-                . $ordem->codigo
-                . '.',
+                'id_ordem' =>
+                    $ordem->id_ordem,
 
-            'data_movimentacao' =>
-                now(),
-        ]);
+                'id_item_producao' =>
+                    $lote->id_item,
 
-        $item
-            ->produto_estoque_adicionado_at =
+                'tipo_movimentacao' =>
+                    'saida',
+
+                'origem' =>
+                    'producao_reversao',
+
+                'quantidade' =>
+                    $quantidade,
+
+                'observacao' =>
+                    'Retirada automática devido à reversão da conclusão da '
+                    . $ordem->codigo
+                    . ' - '
+                    . $variacao->produto->nome_produto
+                    . ' '
+                    . $variacao->tamanho
+                    . '/'
+                    . $variacao->cor
+                    . '.',
+
+                'data_movimentacao' =>
+                    now(),
+            ]);
+        }
+
+        $lote->produto_estoque_adicionado_at =
             null;
 
-        $item->save();
+        $lote->save();
 
         return null;
     }

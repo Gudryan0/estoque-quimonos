@@ -9,7 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'id_ordem',
-    'id_variacao',
+    'id_produto',
+    'id_cliente',
+    'cliente_nome',
+    'cor',
     'quantidade',
     'etapa_atual',
     'materiais_consumidos_at',
@@ -49,12 +52,30 @@ class OrdemProducaoItem extends Model
         );
     }
 
-    public function variacao(): BelongsTo
+    public function produto(): BelongsTo
     {
         return $this->belongsTo(
-            ProdutoVariacao::class,
-            'id_variacao',
-            'id_variacao'
+            Produto::class,
+            'id_produto',
+            'id_produto'
+        );
+    }
+
+    public function cliente(): BelongsTo
+    {
+        return $this->belongsTo(
+            Cliente::class,
+            'id_cliente',
+            'id_cliente'
+        );
+    }
+
+    public function variacoes(): HasMany
+    {
+        return $this->hasMany(
+            OrdemProducaoItemVariacao::class,
+            'id_item',
+            'id_item'
         );
     }
 

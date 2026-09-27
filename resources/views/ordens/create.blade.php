@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('title', 'Nova Ordem de Produção')
@@ -11,7 +12,8 @@
 
     <p class="text-muted mb-0">
         Cadastre as informações gerais da ordem.
-        Os itens serão adicionados na próxima etapa.
+        Os lotes e seus respectivos clientes serão
+        adicionados na próxima etapa.
     </p>
 </div>
 
@@ -50,64 +52,6 @@
                     method="POST"
                 >
                     @csrf
-
-                    <div class="mb-4">
-                        <label
-                            for="id_cliente"
-                            class="form-label"
-                        >
-                            Cliente
-                        </label>
-
-                        <select
-                            name="id_cliente"
-                            id="id_cliente"
-                            class="
-                                form-select
-
-                                @error('id_cliente')
-                                    is-invalid
-                                @enderror
-                            "
-                        >
-                            <option value="">
-                                Sem cliente definido
-                            </option>
-
-                            @foreach(
-                                $clientes
-                                as $cliente
-                            )
-                                <option
-                                    value="{{
-                                        $cliente
-                                            ->id_cliente
-                                    }}"
-                                    @selected(
-                                        old('id_cliente')
-                                        ==
-                                        $cliente
-                                            ->id_cliente
-                                    )
-                                >
-                                    {{
-                                        $cliente
-                                            ->nome_cliente
-                                    }}
-                                </option>
-                            @endforeach
-                        </select>
-
-                        @error('id_cliente')
-                            <div class="invalid-feedback">
-                                {{ $message }}
-                            </div>
-                        @enderror
-
-                        <div class="form-text">
-                            Campo opcional.
-                        </div>
-                    </div>
 
                     <div class="mb-4">
                         <label
@@ -168,7 +112,7 @@
                             "
                             rows="4"
                             maxlength="2000"
-                            placeholder="Informações adicionais sobre esta ordem"
+                            placeholder="Informações gerais sobre esta ordem"
                         >{{ old('observacao') }}</textarea>
 
                         @error('observacao')
@@ -192,9 +136,12 @@
                             mb-4
                         "
                     >
-                        Depois de criar a ordem,
-                        você poderá adicionar as variações
-                        e quantidades que serão produzidas.
+                        Depois de criar a ordem, você poderá
+                        adicionar diferentes lotes de produção.
+
+                        Cada lote poderá ter seu próprio
+                        cliente, produto, cor, costureiro,
+                        tamanhos e quantidades.
 
                         A produção só será iniciada depois
                         dessa etapa.
