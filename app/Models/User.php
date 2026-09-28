@@ -15,6 +15,7 @@ use Illuminate\Notifications\Notifiable;
     'email',
     'password',
     'nivel_acesso',
+    'ativo',
 ])]
 #[Hidden([
     'password',
@@ -60,8 +61,14 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'email_verified_at' =>
+                'datetime',
+
+            'password' =>
+                'hashed',
+
+            'ativo' =>
+                'boolean',
         ];
     }
 }

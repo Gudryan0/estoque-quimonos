@@ -16,6 +16,7 @@ use App\Http\Controllers\ProdutoVariacaoController;
 use App\Http\Controllers\RelatorioController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Middleware\AdministradorMiddleware;
+use App\Http\Middleware\UsuarioAtivoMiddleware;
 use Illuminate\Support\Facades\Route;
 
 Route::get(
@@ -28,7 +29,10 @@ Route::post(
     [AuthController::class, 'login']
 )->name('login.autenticar');
 
-Route::middleware('auth')->group(function () {
+Route::middleware([
+    'auth',
+    UsuarioAtivoMiddleware::class,
+])->group(function () {
 
     Route::get(
         '/',

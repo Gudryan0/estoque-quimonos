@@ -356,6 +356,8 @@
                         {{
                             $ordem
                                 ->cancelada_em
+                                ->copy()
+                                ->timezone($timezone)
                                 ->format(
                                     'd/m/Y H:i:s'
                                 )

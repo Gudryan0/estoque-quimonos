@@ -38,6 +38,15 @@ class UsuarioController extends Controller
             $request
         );
 
+        /*
+         * Todo novo usuário começa ativo.
+         *
+         * A inativação é uma ação administrativa
+         * posterior, usada quando o usuário não
+         * deve mais acessar o sistema.
+         */
+        $dados['ativo'] = true;
+
         User::create($dados);
 
         return redirect()
@@ -70,21 +79,95 @@ class UsuarioController extends Controller
             $usuario
         );
 
+        /*
+         * Mantém compatibilidade com requisições
+         * que não enviem explicitamente o status.
+         */
         if (
+            !array_key_exists(
+                'ativo',
+                $dados
+            )
+        ) {
+            $dados['ativo'] =
+                $usuario->ativo;
+        }
+
+        $novoStatusAtivo =
+            (bool) $dados['ativo'];
+
+        $vaiSerInativado =
+            $usuario->ativo
+            && !$novoStatusAtivo;
+
+        $vaiSerRebaixado =
             $usuario->nivel_acesso
                 === 'administrador'
             &&
             $dados['nivel_acesso']
-                === 'funcionario'
+                === 'funcionario';
+
+        /*
+         * O usuário não pode encerrar o próprio
+         * acesso enquanto utiliza a conta.
+         */
+        if (
+            $usuario->id
+                === auth()->id()
             &&
-            $this->quantidadeAdministradores()
+            $vaiSerInativado
+        ) {
+            return back()
+                ->withInput()
+                ->with(
+                    'erro',
+                    'Você não pode inativar sua própria conta.'
+                );
+        }
+
+        /*
+         * Um administrador ativo não pode ser
+         * rebaixado caso seja o último
+         * administrador ativo do sistema.
+         */
+        if (
+            $usuario->ativo
+            &&
+            $vaiSerRebaixado
+            &&
+            $this
+                ->quantidadeAdministradoresAtivos()
                 <= 1
         ) {
             return back()
                 ->withInput()
                 ->with(
                     'erro',
-                    'Não é possível rebaixar o último administrador do sistema.'
+                    'Não é possível rebaixar o último administrador ativo do sistema.'
+                );
+        }
+
+        /*
+         * Também não permitimos inativar o último
+         * administrador ativo.
+         */
+        if (
+            $usuario->ativo
+            &&
+            $usuario->nivel_acesso
+                === 'administrador'
+            &&
+            $vaiSerInativado
+            &&
+            $this
+                ->quantidadeAdministradoresAtivos()
+                <= 1
+        ) {
+            return back()
+                ->withInput()
+                ->with(
+                    'erro',
+                    'Não é possível inativar o último administrador ativo do sistema.'
                 );
         }
 
@@ -97,6 +180,9 @@ class UsuarioController extends Controller
                 $dados['password']
             );
         }
+
+        $dados['ativo'] =
+            $novoStatusAtivo;
 
         $usuario->update(
             $dados
@@ -115,7 +201,7 @@ class UsuarioController extends Controller
     ) {
         if (
             $usuario->id
-            === auth()->id()
+                === auth()->id()
         ) {
             return redirect()
                 ->route('usuarios.index')
@@ -125,18 +211,25 @@ class UsuarioController extends Controller
                 );
         }
 
+        /*
+         * Um administrador inativo não é contado
+         * como acesso administrativo disponível.
+         */
         if (
             $usuario->nivel_acesso
                 === 'administrador'
             &&
-            $this->quantidadeAdministradores()
+            $usuario->ativo
+            &&
+            $this
+                ->quantidadeAdministradoresAtivos()
                 <= 1
         ) {
             return redirect()
                 ->route('usuarios.index')
                 ->with(
                     'erro',
-                    'Não é possível excluir o último administrador do sistema.'
+                    'Não é possível excluir o último administrador ativo do sistema.'
                 );
         }
 
@@ -217,41 +310,57 @@ class UsuarioController extends Controller
             );
         }
 
-        return $request->validate(
-            [
-                'name' => [
-                    'required',
-                    'string',
-                    'min:2',
-                    'max:120',
-                    'regex:/[A-Za-zÀ-ÖØ-öø-ÿ]/u',
-                ],
-
-                'email' => [
-                    'required',
-                    'email:rfc',
-                    'max:255',
-                    $regraEmail,
-                ],
-
-                'password' => [
-                    $usuario === null
-                        ? 'required'
-                        : 'nullable',
-                    'string',
-                    'min:8',
-                    'max:255',
-                    'confirmed',
-                ],
-
-                'nivel_acesso' => [
-                    'required',
-                    Rule::in([
-                        'administrador',
-                        'funcionario',
-                    ]),
-                ],
+        $regras = [
+            'name' => [
+                'required',
+                'string',
+                'min:2',
+                'max:120',
+                'regex:/[A-Za-zÀ-ÖØ-öø-ÿ]/u',
             ],
+
+            'email' => [
+                'required',
+                'email:rfc',
+                'max:255',
+                $regraEmail,
+            ],
+
+            'password' => [
+                $usuario === null
+                    ? 'required'
+                    : 'nullable',
+
+                'string',
+                'min:8',
+                'max:255',
+                'confirmed',
+            ],
+
+            'nivel_acesso' => [
+                'required',
+
+                Rule::in([
+                    'administrador',
+                    'funcionario',
+                ]),
+            ],
+        ];
+
+        /*
+         * O cadastro sempre começa ativo.
+         * O status só pode ser alterado durante
+         * a edição de um usuário existente.
+         */
+        if ($usuario !== null) {
+            $regras['ativo'] = [
+                'sometimes',
+                'boolean',
+            ];
+        }
+
+        return $request->validate(
+            $regras,
             [
                 'name.required' =>
                     'Informe o nome do usuário.',
@@ -300,6 +409,9 @@ class UsuarioController extends Controller
 
                 'nivel_acesso.in' =>
                     'O nível de acesso selecionado é inválido.',
+
+                'ativo.boolean' =>
+                    'O status selecionado é inválido.',
             ]
         );
     }
@@ -348,18 +460,27 @@ class UsuarioController extends Controller
         }
 
         $request->merge([
-            'name' => $nome,
-            'email' => $email,
+            'name' =>
+                $nome,
+
+            'email' =>
+                $email,
+
             'nivel_acesso' =>
                 $nivelAcesso,
         ]);
     }
 
-    private function quantidadeAdministradores(): int
+    private function quantidadeAdministradoresAtivos(): int
     {
         return User::where(
             'nivel_acesso',
             'administrador'
-        )->count();
+        )
+            ->where(
+                'ativo',
+                true
+            )
+            ->count();
     }
 }

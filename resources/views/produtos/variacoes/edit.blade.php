@@ -47,6 +47,30 @@
                     </div>
                 @endif
 
+                @if($utilizadaEmProducao)
+                    <div
+                        class="
+                            alert
+                            bg-warning-subtle
+                            text-warning-emphasis
+                            border
+                            border-warning-subtle
+                            mb-4
+                        "
+                    >
+                        <strong>
+                            Identificação protegida.
+                        </strong>
+
+                        Esta variação já foi utilizada em
+                        uma ordem de produção. Por isso,
+                        tamanho e cor não podem mais ser
+                        alterados, preservando a identificação
+                        usada no histórico. O estoque mínimo
+                        continua editável normalmente.
+                    </div>
+                @endif
+
                 <form
                     action="{{
                         route(
@@ -82,17 +106,24 @@
                                 class="
                                     form-control
 
+                                    @if($utilizadaEmProducao)
+                                        bg-body-secondary
+                                    @endif
+
                                     @error('tamanho')
                                         is-invalid
                                     @enderror
                                 "
                                 value="{{
-                                    old(
-                                        'tamanho',
-                                        $variacao->tamanho
-                                    )
+                                    $utilizadaEmProducao
+                                        ? $variacao->tamanho
+                                        : old(
+                                            'tamanho',
+                                            $variacao->tamanho
+                                        )
                                 }}"
                                 maxlength="30"
+                                @readonly($utilizadaEmProducao)
                                 required
                             >
 
@@ -121,17 +152,24 @@
                                 class="
                                     form-control
 
+                                    @if($utilizadaEmProducao)
+                                        bg-body-secondary
+                                    @endif
+
                                     @error('cor')
                                         is-invalid
                                     @enderror
                                 "
                                 value="{{
-                                    old(
-                                        'cor',
-                                        $variacao->cor
-                                    )
+                                    $utilizadaEmProducao
+                                        ? $variacao->cor
+                                        : old(
+                                            'cor',
+                                            $variacao->cor
+                                        )
                                 }}"
                                 maxlength="60"
+                                @readonly($utilizadaEmProducao)
                                 required
                             >
 

@@ -21,7 +21,7 @@
         </h1>
 
         <p class="text-muted mb-0">
-            Gerencie usuários e níveis
+            Gerencie usuários, status e níveis
             de acesso ao sistema.
         </p>
     </div>
@@ -96,6 +96,10 @@
 
                         <th>
                             Nível de acesso
+                        </th>
+
+                        <th>
+                            Status
                         </th>
 
                         <th class="text-end">
@@ -179,6 +183,34 @@
                                 @endif
                             </td>
 
+                            <td>
+                                @if($usuario->ativo)
+                                    <span
+                                        class="
+                                            badge
+                                            bg-success-subtle
+                                            text-success-emphasis
+                                            border
+                                            border-success-subtle
+                                        "
+                                    >
+                                        Ativo
+                                    </span>
+                                @else
+                                    <span
+                                        class="
+                                            badge
+                                            bg-secondary-subtle
+                                            text-secondary-emphasis
+                                            border
+                                            border-secondary-subtle
+                                        "
+                                    >
+                                        Inativo
+                                    </span>
+                                @endif
+                            </td>
+
                             <td
                                 class="
                                     text-end
@@ -209,7 +241,7 @@
                                     <span
                                         class="d-inline-block"
                                         tabindex="0"
-                                        title="Excluir indisponível — Você não pode excluir a conta que está utilizando no momento."
+                                        title="Excluir indisponível: você não pode excluir a conta que está utilizando no momento."
                                     >
                                         <button
                                             type="button"

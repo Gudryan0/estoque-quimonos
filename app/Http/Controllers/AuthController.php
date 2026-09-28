@@ -10,43 +10,85 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Auth::check()) {
-            return redirect()->route('dashboard');
+            return redirect()
+                ->route('dashboard');
         }
 
-        return view('auth.login');
+        return view(
+            'auth.login'
+        );
     }
 
-    public function login(Request $request)
-    {
-        $credenciais = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
-        ]);
+    public function login(
+        Request $request
+    ) {
+        $credenciais =
+            $request->validate([
+                'email' => [
+                    'required',
+                    'email',
+                ],
 
-        if (Auth::attempt($credenciais)) {
-            $request->session()->regenerate();
+                'password' => [
+                    'required',
+                    'string',
+                ],
+            ]);
+
+        if (
+            Auth::attempt([
+                'email' =>
+                    $credenciais['email'],
+
+                'password' =>
+                    $credenciais['password'],
+
+                'ativo' =>
+                    true,
+            ])
+        ) {
+            $request
+                ->session()
+                ->regenerate();
 
             return redirect()
-                ->intended(route('dashboard'))
-                ->with('sucesso', 'Login realizado com sucesso.');
+                ->intended(
+                    route('dashboard')
+                )
+                ->with(
+                    'sucesso',
+                    'Login realizado com sucesso.'
+                );
         }
 
         return back()
             ->withErrors([
-                'email' => 'E-mail ou senha inválidos.',
+                'email' =>
+                    'E-mail ou senha inválidos.',
             ])
-            ->onlyInput('email');
+            ->onlyInput(
+                'email'
+            );
     }
 
-    public function logout(Request $request)
-    {
+    public function logout(
+        Request $request
+    ) {
         Auth::logout();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        $request
+            ->session()
+            ->invalidate();
+
+        $request
+            ->session()
+            ->regenerateToken();
 
         return redirect()
             ->route('login')
-            ->with('sucesso', 'Logout realizado com sucesso.');
+            ->with(
+                'sucesso',
+                'Logout realizado com sucesso.'
+            );
     }
 }

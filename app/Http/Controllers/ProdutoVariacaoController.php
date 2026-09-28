@@ -368,11 +368,18 @@ class ProdutoVariacaoController extends Controller
             $variacao
         );
 
+        $utilizadaEmProducao =
+            OrdemProducaoItemVariacao::where(
+                'id_variacao',
+                $variacao->id_variacao
+            )->exists();
+
         return view(
             'produtos.variacoes.edit',
             compact(
                 'produto',
-                'variacao'
+                'variacao',
+                'utilizadaEmProducao'
             )
         );
     }

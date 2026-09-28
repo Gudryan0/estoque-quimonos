@@ -128,6 +128,74 @@
     <div class="mb-3">
 
         <label
+            for="ativo"
+            class="form-label"
+        >
+            Status
+        </label>
+
+        <select
+            name="ativo"
+            id="ativo"
+            class="form-select"
+            required
+        >
+
+            <option
+                value="1"
+                @selected(
+                    old(
+                        'ativo',
+                        $usuario->ativo
+                            ? '1'
+                            : '0'
+                    ) === '1'
+                )
+            >
+                Ativo
+            </option>
+
+            <option
+                value="0"
+                @selected(
+                    old(
+                        'ativo',
+                        $usuario->ativo
+                            ? '1'
+                            : '0'
+                    ) === '0'
+                )
+                @disabled(
+                    $usuario->id
+                    === auth()->id()
+                )
+            >
+                Inativo
+            </option>
+
+        </select>
+
+        @if(
+            $usuario->id
+            === auth()->id()
+        )
+            <div class="form-text">
+                Sua própria conta não pode ser
+                inativada enquanto estiver em uso.
+            </div>
+        @else
+            <div class="form-text">
+                Usuários inativos permanecem no
+                histórico, mas não podem acessar
+                o sistema.
+            </div>
+        @endif
+
+    </div>
+
+    <div class="mb-3">
+
+        <label
             for="password"
             class="form-label"
         >

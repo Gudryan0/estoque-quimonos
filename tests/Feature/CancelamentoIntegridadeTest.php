@@ -84,6 +84,86 @@ class CancelamentoIntegridadeTest extends TestCase
         );
     }
 
+    public function test_cancelamento_registra_historico_para_o_lote(): void
+    {
+        $idVariacao =
+            $this->criarProdutoVariacao();
+
+        $idOrdem =
+            $this->criarOrdem();
+
+        $idItem =
+            $this->criarItem(
+                $idOrdem,
+                $idVariacao,
+                2
+            );
+
+        $this->post(
+            route(
+                'ordens.cancelar',
+                $idOrdem
+            ),
+            [
+                'motivo_cancelamento' =>
+                    'Cancelamento para teste de histórico.',
+
+                'confirmar_cancelamento' =>
+                    '1',
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'ordem_producao_historicos',
+            [
+                'id_ordem' =>
+                    $idOrdem,
+
+                'id_item' =>
+                    $idItem,
+
+                'id_usuario' =>
+                    $this->usuario->id,
+
+                'acao' =>
+                    'cancelamento',
+
+                'etapa_origem' =>
+                    null,
+
+                'etapa_destino' =>
+                    'cancelado',
+            ]
+        );
+
+        $historico =
+            DB::table(
+                'ordem_producao_historicos'
+            )
+                ->where(
+                    'id_ordem',
+                    $idOrdem
+                )
+                ->where(
+                    'id_item',
+                    $idItem
+                )
+                ->where(
+                    'acao',
+                    'cancelamento'
+                )
+                ->first();
+
+        $this->assertNotNull(
+            $historico
+        );
+
+        $this->assertStringContainsString(
+            'Cancelamento para teste de histórico.',
+            $historico->observacao
+        );
+    }
+
     public function test_cancelamento_de_ordem_em_producao_nao_devolve_material_consumido(): void
     {
         $idVariacao =
@@ -304,6 +384,118 @@ class CancelamentoIntegridadeTest extends TestCase
 
                 'etapa_atual' =>
                     'concluido',
+            ]
+        );
+    }
+
+    public function test_ordem_concluida_nao_pode_ser_cancelada(): void
+    {
+        $idVariacao =
+            $this->criarProdutoVariacao();
+
+        $idMaterial =
+            $this->criarMaterial(10);
+
+        $this->criarComposicao(
+            $idVariacao,
+            $idMaterial,
+            1
+        );
+
+        $idOrdem =
+            $this->criarOrdem();
+
+        $idItem =
+            $this->criarItem(
+                $idOrdem,
+                $idVariacao,
+                2
+            );
+
+        $this->post(
+            route(
+                'ordens.iniciar',
+                $idOrdem
+            )
+        );
+
+        for ($i = 0; $i < 4; $i++) {
+            $this->post(
+                route(
+                    'ordens.itens.avancar',
+                    [
+                        $idOrdem,
+                        $idItem,
+                    ]
+                )
+            );
+        }
+
+        $this->assertDatabaseHas(
+            'ordens_producao',
+            [
+                'id_ordem' =>
+                    $idOrdem,
+
+                'status' =>
+                    'concluida',
+            ]
+        );
+
+        $resposta = $this->post(
+            route(
+                'ordens.cancelar',
+                $idOrdem
+            ),
+            [
+                'motivo_cancelamento' =>
+                    'Tentativa após conclusão.',
+
+                'confirmar_cancelamento' =>
+                    '1',
+            ]
+        );
+
+        $resposta
+            ->assertRedirect(
+                route(
+                    'ordens.show',
+                    $idOrdem
+                )
+            )
+            ->assertSessionHas(
+                'erro',
+                'O estado atual desta ordem não permite cancelamento.'
+            );
+
+        $this->assertDatabaseHas(
+            'ordens_producao',
+            [
+                'id_ordem' =>
+                    $idOrdem,
+
+                'status' =>
+                    'concluida',
+
+                'motivo_cancelamento' =>
+                    null,
+
+                'cancelada_em' =>
+                    null,
+
+                'id_usuario_cancelamento' =>
+                    null,
+            ]
+        );
+
+        $this->assertDatabaseMissing(
+            'ordem_producao_historicos',
+            [
+                'id_ordem' =>
+                    $idOrdem,
+
+                'acao' =>
+                    'cancelamento',
             ]
         );
     }

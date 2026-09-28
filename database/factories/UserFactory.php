@@ -25,7 +25,8 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            'name' =>
+                fake()->name(),
 
             'email' =>
                 fake()
@@ -46,6 +47,9 @@ class UserFactory extends Factory
 
             'nivel_acesso' =>
                 'funcionario',
+
+            'ativo' =>
+                true,
         ];
     }
 
@@ -56,7 +60,8 @@ class UserFactory extends Factory
     {
         return $this->state(
             fn (array $attributes) => [
-                'email_verified_at' => null,
+                'email_verified_at' =>
+                    null,
             ]
         );
     }
